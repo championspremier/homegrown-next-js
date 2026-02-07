@@ -1,0 +1,412 @@
+/* Shell */
+.shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+@media (min-width: 768px) {
+  .shell {
+    flex-direction: row;
+  }
+}
+
+.shellContent {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+/* Sidebar */
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  border-bottom: 1px solid var(--border);
+  background: var(--background);
+}
+
+@media (min-width: 768px) {
+  .sidebar {
+    width: 12rem;
+    min-width: 12rem;
+    border-bottom: none;
+    border-right: 1px solid var(--border);
+  }
+}
+
+.sidebarNav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.75rem;
+}
+
+@media (min-width: 768px) {
+  .sidebarNav {
+    padding: 1rem;
+  }
+}
+
+.sidebarLink {
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  color: var(--foreground);
+  text-decoration: none;
+}
+
+.sidebarLink:hover {
+  background: var(--border);
+}
+
+.sidebarLinkActive {
+  background: var(--border);
+  font-weight: 500;
+}
+
+.sidebarLinkLogo {
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+/* Topbar */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--background);
+}
+
+@media (min-width: 768px) {
+  .topbar {
+    padding: 0.75rem 1.5rem;
+  }
+}
+
+.topbarLeft {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.topbarRight {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.signOutBtn {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.875rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--foreground);
+}
+
+.signOutBtn:hover {
+  background: var(--border);
+}
+
+/* Main content */
+.main {
+  flex: 1;
+  padding: 1rem;
+}
+
+@media (min-width: 768px) {
+  .main {
+    padding: 1.5rem;
+  }
+}
+
+/* Page content */
+.pageTitle {
+  margin-bottom: 0.5rem;
+}
+
+.muted {
+  color: var(--muted);
+  margin-bottom: 1.5rem;
+}
+
+.mutedNoMargin {
+  color: var(--muted);
+  margin-bottom: 0;
+}
+
+.linkBlock {
+  margin-top: 0.75rem;
+  display: inline-block;
+}
+
+.cardGridTop {
+  margin-top: 1.5rem;
+}
+
+.cardGrid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 640px) {
+  .cardGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .cardGrid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.card {
+  padding: 1rem 1.25rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--background);
+  text-decoration: none;
+  color: inherit;
+  display: block;
+}
+
+.card:hover {
+  border-color: var(--primary);
+}
+
+.cardTitle {
+  font-weight: 600;
+}
+
+.cardDesc {
+  font-size: 0.875rem;
+  color: var(--muted);
+  margin-top: 0.25rem;
+}
+
+.widget {
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: 1rem;
+}
+
+.widgetTitle {
+  font-size: 0.875rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.widgetList {
+  list-style: none;
+}
+
+.widgetItem {
+  font-size: 0.875rem;
+  padding: 0.25rem 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.widgetItem:last-child {
+  border-bottom: none;
+}
+
+/* Mobile sidebar toggle */
+.menuToggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: transparent;
+}
+
+@media (min-width: 768px) {
+  .menuToggle {
+    display: none;
+  }
+}
+
+.sidebarBackdrop {
+  display: block;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.3);
+  z-index: 40;
+}
+
+@media (min-width: 768px) {
+  .sidebarBackdrop {
+    display: none;
+  }
+}
+
+.sidebarWrapper {
+  position: relative;
+}
+
+@media (min-width: 768px) {
+  .sidebarWrapper {
+    position: static;
+  }
+}
+
+.sidebarMobile {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 50;
+  height: 100vh;
+  width: 12rem;
+  background: var(--background);
+  border-right: 1px solid var(--border);
+  transform: translateX(-100%);
+  transition: transform 0.2s ease;
+}
+
+.sidebarMobileOpen {
+  transform: translateX(0);
+}
+
+@media (min-width: 768px) {
+  .sidebarMobile {
+    position: static;
+    height: auto;
+    width: 12rem;
+    min-width: 12rem;
+    transform: none;
+  }
+}
+
+/* Account switcher (used in Topbar) */
+.accountSwitcher {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.accountSwitcherLabel {
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+
+.accountSwitcherSelect {
+  padding: 0.25rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--background);
+  color: var(--foreground);
+}
+
+.accountSwitcherButton {
+  padding: 0.25rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--background);
+  color: var(--foreground);
+  cursor: pointer;
+}
+
+/* Auth pages (login/signup wrapper) */
+.authPage {
+  max-width: 24rem;
+  margin: 4rem auto;
+  padding: 0 1rem;
+}
+
+.authTitle {
+  margin-bottom: 1.5rem;
+}
+
+.authMuted {
+  margin-top: 1rem;
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+
+/* Generic page/section */
+.contentWrap {
+  padding: 1.5rem;
+}
+
+.contentNav {
+  margin-bottom: 1.5rem;
+}
+
+.avatarRound {
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.flexRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.sectionTitle {
+  font-size: 1.125rem;
+  margin-bottom: 0.75rem;
+}
+
+.listUnstyled {
+  list-style: none;
+}
+
+.bookingItem {
+  padding: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  margin-bottom: 0.5rem;
+}
+
+.bookingItem:last-child {
+  margin-bottom: 0;
+}
+
+.coachLink {
+  margin-right: 0.5rem;
+}
+
+.sectionBottom {
+  margin-bottom: 2rem;
+}
+
+.mutedSmall {
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+.marginTop {
+  margin-top: 1rem;
+}
+
+.marginTopLg {
+  margin-top: 1.5rem;
+}
+
+.landingMain {
+  padding: 2rem;
+  text-align: center;
+}
+
+.landingMuted {
+  margin-top: 1rem;
+  color: var(--muted);
+}
+
+.landingNav {
+  margin-top: 2rem;
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+}

@@ -1,0 +1,120 @@
+.schedulePage {
+  min-height: 100vh;
+  padding: 1.5rem;
+}
+
+.scheduleNav {
+  margin-bottom: 1.5rem;
+}
+
+.scheduleMain {
+  max-width: 42rem;
+  margin: 0 auto;
+}
+
+.scheduleTitle {
+  margin-bottom: 0.5rem;
+}
+
+.scheduleMuted {
+  color: var(--muted);
+  margin-bottom: 1.5rem;
+}
+
+.confirmBox {
+  padding: 1.5rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--background);
+}
+
+.confirmTitle {
+  margin-bottom: 0.5rem;
+}
+
+.confirmLink {
+  display: inline-block;
+  margin-top: 1rem;
+}
+
+.formStack {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.formGroup {
+  display: block;
+}
+
+.formLabel {
+  display: block;
+  margin-bottom: 0.25rem;
+  font-size: 0.875rem;
+}
+
+.formLabelSpaced {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.formSelect {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  min-width: 12rem;
+  background: var(--background);
+  color: var(--foreground);
+}
+
+.slotList {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.slotButton {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--foreground);
+  cursor: pointer;
+  font: inherit;
+}
+
+.slotButton:hover {
+  border-color: var(--primary);
+}
+
+.slotButtonSelected {
+  border-color: var(--primary);
+  background: var(--primary);
+  color: var(--primary-foreground);
+}
+
+.formSubmit {
+  padding: 0.5rem 1rem;
+  background: var(--primary);
+  color: var(--primary-foreground);
+  border: none;
+  border-radius: 4px;
+  font: inherit;
+  cursor: pointer;
+}
+
+.formSubmit:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.formError {
+  color: crimson;
+  font-size: 0.875rem;
+}
+
+.muted {
+  color: var(--muted);
+}
