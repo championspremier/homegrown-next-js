@@ -1,6 +1,7 @@
 import { requireActiveRole } from "@/lib/auth";
 import { getLinkedAccounts } from "@/app/actions/account";
 import { UpdateEmailForm } from "@/components/update-email-form";
+import { ThemeToggleSection } from "@/components/ThemeToggleSection";
 import { LinkPlayerForm } from "./link-player-form";
 import styles from "@/components/layout/layout.module.css";
 
@@ -16,6 +17,8 @@ export default async function ParentProfilePage() {
       <p className={styles.muted}>
         Manage your profile and linked player accounts.
       </p>
+
+      <ThemeToggleSection />
 
       <section className={styles.widget}>
         <h2 className={styles.widgetTitle}>Login email</h2>

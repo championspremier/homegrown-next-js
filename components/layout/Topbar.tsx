@@ -1,6 +1,7 @@
 "use client";
 
 import { ReactNode } from "react";
+import { usePathname } from "next/navigation";
 import styles from "./layout.module.css";
 
 interface TopbarProps {
@@ -8,7 +9,49 @@ interface TopbarProps {
   rightSlot?: ReactNode;
 }
 
+function useTopbarVisibility() {
+  const pathname = usePathname() ?? "";
+  const isAdmin = pathname.startsWith("/admin");
+  const isCoach = pathname.startsWith("/coach");
+  const isParent = pathname.startsWith("/parent");
+  const isPlayer = pathname.startsWith("/player");
+
+  let showTopbar = false;
+
+  if (isAdmin) {
+    const isCommunicate = pathname.includes("/communicate");
+    const isProfile = pathname.includes("/profile");
+    showTopbar = isCommunicate || isProfile;
+  } else if (isCoach) {
+    showTopbar = pathname.includes("/profile") || pathname.includes("/communicate");
+  } else if (isParent) {
+    const isHome = pathname === "/parent" || pathname === "/parent/home";
+    const isProfile = pathname.includes("/profile");
+    showTopbar = isHome || isProfile;
+  } else if (isPlayer) {
+    const isHome = pathname === "/player" || pathname === "/player/home";
+    const isProfile = pathname.includes("/profile");
+    showTopbar = isHome || isProfile;
+  }
+
+  const showSignOut = pathname.includes("/profile");
+
+  return { showTopbar, showSignOut };
+}
+
 export function Topbar({ onMenuToggle, rightSlot }: TopbarProps) {
+  const { showTopbar, showSignOut } = useTopbarVisibility();
+
+  function handleSignOut() {
+    const form = document.createElement("form");
+    form.method = "POST";
+    form.action = "/api/auth/signout";
+    document.body.appendChild(form);
+    form.submit();
+  }
+
+  if (!showTopbar) return null;
+
   return (
     <header className={styles.topbar}>
       <div className={styles.topbarLeft}>
@@ -25,11 +68,11 @@ export function Topbar({ onMenuToggle, rightSlot }: TopbarProps) {
       </div>
       <div className={styles.topbarRight}>
         {rightSlot}
-        <form method="POST" action="/api/auth/signout">
-          <button type="submit" className={styles.signOutBtn}>
+        {showSignOut && (
+          <button type="button" className={styles.signOutBtn} onClick={handleSignOut}>
             Sign out
           </button>
-        </form>
+        )}
       </div>
     </header>
   );

@@ -25,7 +25,7 @@
   padding: 1.5rem;
   border: 1px solid var(--border);
   border-radius: 8px;
-  background: var(--background);
+  background: var(--surface);
 }
 
 .confirmTitle {
@@ -64,8 +64,8 @@
   border: 1px solid var(--border);
   border-radius: 4px;
   min-width: 12rem;
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--surface);
+  color: var(--text);
 }
 
 .slotList {
@@ -80,7 +80,7 @@
   border: 1px solid var(--border);
   border-radius: 4px;
   background: transparent;
-  color: var(--foreground);
+  color: var(--text);
   cursor: pointer;
   font: inherit;
 }

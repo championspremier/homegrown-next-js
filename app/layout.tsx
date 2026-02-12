@@ -9,13 +9,23 @@ export const metadata: Metadata = {
   },
 };
 
+const themeInitScript = `
+(function() {
+  var s = localStorage.getItem('hg-theme');
+  document.documentElement.setAttribute('data-theme', s === 'dark' ? 'dark' : 'light');
+})();
+`;
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+      </head>
       <body>{children}</body>
     </html>
   );

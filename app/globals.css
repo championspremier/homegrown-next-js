@@ -1,35 +1,68 @@
+/* Light mode (default). All variables on :root. */
 :root {
-  --foreground: #0a0a0a;
-  --background: #fafafa;
-  --muted: #737373;
-  --border: #e5e5e5;
-  --primary: #15803d;
-  --primary-foreground: #fff;
+  --bg: #f8f9fb;
+  --surface: #ffffff;
+  --text: #111111;
+  --foreground: #111111;
+  --background: #f8f9fb;
+  --border: #bebebe;
+  --muted: #6b7280;
+  --accent: linear-gradient(135deg, #7bb8d4 0%, #5fa4c4 45%, #3b82f6 100%);
+  --accent-solid: #3b82f6;
+  --hover: rgba(111, 111, 111, 0.05);
+  --primary: #3b82f6;
+  --primary-foreground: #ffffff;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --foreground: #fafafa;
-    --background: #0a0a0a;
-    --muted: #a3a3a3;
-    --border: #262626;
-    --primary: #22c55e;
-  }
+/* Dark mode: data-theme on html */
+html[data-theme="dark"] {
+  --bg: rgb(25, 25, 25);
+  --surface: rgb(32, 32, 32);
+  --text: #ffffff;
+  --foreground: #ffffff;
+  --background: rgb(25, 25, 25);
+  --border: #818181;
+  --muted: #9ca3af;
+  --accent: linear-gradient(135deg, #ffe9a3 0%, #d3af37 40%, #9f7c19 100%);
+  --accent-solid: #d3af37;
+  --hover: rgba(188, 188, 188, 0.1);
+  --primary: #d3af37;
+  --primary-foreground: #ffffff;
 }
 
 * {
   box-sizing: border-box;
   padding: 0;
   margin: 0;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(128, 128, 128, 0.3) transparent;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(128, 128, 128, 0.3);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(128, 128, 128, 0.5);
 }
 
 html,
 body {
   max-width: 100vw;
   min-height: 100vh;
-  color: var(--foreground);
-  background: var(--background);
-  font-family: system-ui, -apple-system, sans-serif;
+  color: var(--text);
+  background: var(--bg);
+  font-family: "Inter", "Manrope", system-ui, -apple-system, sans-serif;
 }
 
 a {
@@ -49,4 +82,21 @@ button {
 input,
 select {
   font: inherit;
+}
+
+/* Logo theme switching (attribute selectors avoid CSS module mangling) */
+img[src="/logo-light.png"] {
+  display: block !important;
+}
+
+img[src="/logo-dark.png"] {
+  display: none !important;
+}
+
+html[data-theme="dark"] img[src="/logo-light.png"] {
+  display: none !important;
+}
+
+html[data-theme="dark"] img[src="/logo-dark.png"] {
+  display: block !important;
 }

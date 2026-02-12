@@ -1,5 +1,6 @@
 import { requireActiveRole } from "@/lib/auth";
 import { UpdateEmailForm } from "@/components/update-email-form";
+import { ThemeToggleSection } from "@/components/ThemeToggleSection";
 import styles from "@/components/layout/layout.module.css";
 
 export default async function PlayerProfilePage() {
@@ -12,6 +13,8 @@ export default async function PlayerProfilePage() {
       <p className={styles.muted}>
         Manage your profile and login email.
       </p>
+
+      <ThemeToggleSection />
 
       <section className={styles.widget}>
         <h2 className={styles.widgetTitle}>Login email</h2>
