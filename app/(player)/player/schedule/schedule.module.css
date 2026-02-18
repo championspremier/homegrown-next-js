@@ -1,0 +1,1198 @@
+/* 1. Layout */
+.scheduleContainer {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 16px 20px;
+}
+
+.pageTitle {
+  text-align: center;
+  font-weight: 700;
+  font-size: 1.5rem;
+  margin-bottom: 24px;
+}
+
+/* 2. Accordion toggle */
+.section {
+  margin-bottom: 8px;
+}
+
+.sectionToggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 16px 0;
+  cursor: pointer;
+  user-select: none;
+  border-bottom: 1px solid var(--border);
+}
+
+.sectionTitle {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--foreground);
+}
+
+.sectionChevron {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  transition: transform 0.25s ease;
+  color: var(--muted);
+}
+
+.sectionChevronOpen {
+  transform: rotate(180deg);
+}
+
+.sectionContent {
+  overflow: hidden;
+  transition: max-height 0.3s ease;
+  padding-top: 16px;
+}
+
+/* 3. Calendar week strip */
+.calendarHeader {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.calendarNav {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--background);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  color: var(--foreground);
+  font-size: 1rem;
+}
+
+.calendarNav:hover {
+  background: color-mix(in srgb, var(--accent-solid) 8%, transparent);
+}
+
+.calendarNav:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.calendarWeekRow {
+  display: flex;
+  flex: 1;
+  justify-content: space-around;
+}
+
+.calendarDay {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+  padding: 4px 8px;
+  gap: 4px;
+  background: none;
+  border: none;
+}
+
+.dayLabel {
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--muted);
+}
+
+.dayLabelPast {
+  opacity: 0.35;
+}
+
+.dayLabelToday {
+  color: var(--accent-solid);
+  font-weight: 700;
+}
+
+.dayNumber {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+  color: var(--foreground);
+}
+
+.dayNumberPast {
+  opacity: 0.35;
+}
+
+.dayNumberToday {
+  background: var(--accent);
+  color: var(--accent-foreground);
+  font-weight: 700;
+}
+
+.dayNumberFuture {
+  color: var(--foreground);
+  opacity: 0.75;
+}
+
+.dayNumberSelected {
+  outline-color: var(--accent-solid);
+  opacity: 1;
+}
+
+.dayNumberToday.dayNumberSelected {
+  background: var(--accent);
+  color: var(--accent-foreground);
+  outline-color: var(--accent-solid);
+}
+
+.dayNumberPast.dayNumberSelected {
+  opacity: 0.7;
+  outline-color: var(--muted);
+}
+
+.dayNumberFuture.dayNumberSelected {
+  color: var(--foreground);
+  outline-color: var(--accent-solid);
+  opacity: 1;
+}
+
+.dayNumber:hover {
+  opacity: 1;
+  background: color-mix(in srgb, var(--accent-solid) 10%, transparent);
+}
+
+/* 5. Date label */
+.selectedDateLabel {
+  text-align: center;
+  font-weight: 600;
+  margin: 12px 0 16px;
+  font-size: 0.95rem;
+}
+
+.calendarMonthLabel {
+  text-align: center;
+  font-weight: 600;
+  font-size: 1rem;
+  margin-bottom: 8px;
+  color: var(--foreground);
+}
+
+/* Calendly-style layout */
+.scheduleLayout {
+  display: flex;
+  gap: 24px;
+}
+
+.calendarPanel {
+  flex: 0 0 auto;
+  min-width: 280px;
+}
+
+.slotsPanel {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Tab pills (Virtual section) */
+.tabPills {
+  display: flex;
+  gap: 0;
+  margin-bottom: 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  width: fit-content;
+}
+
+.tabPill {
+  padding: 8px 20px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  background: var(--background);
+  color: var(--foreground);
+  border: none;
+  transition: all 0.15s;
+}
+
+.tabPill:not(:last-child) {
+  border-right: 1px solid var(--border);
+}
+
+.tabPillActive {
+  background: var(--accent);
+  color: var(--accent-foreground);
+}
+
+/* Slot row: card + optional Confirm button (Calendly style) */
+.slotRow {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.slotRow .slotCard {
+  flex: 1;
+}
+
+/* Compact single-row slot cards */
+.slotCard {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 8px 12px;
+  min-height: 44px;
+  max-height: 48px;
+  overflow: hidden;
+  background: var(--background);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.slotCard:hover {
+  border-color: var(--accent-solid);
+}
+
+.slotCardSelected {
+  border-color: var(--accent-solid);
+  box-shadow: 0 0 0 1px var(--accent-solid);
+  background: color-mix(in srgb, var(--accent-solid) 6%, var(--background));
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.slotCardBooked {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.slotCardBooked:hover {
+  border-color: var(--border);
+}
+
+.slotTime {
+  font-weight: 600;
+  font-size: 0.82rem;
+  white-space: nowrap;
+  min-width: 65px;
+  flex-shrink: 0;
+  color: var(--foreground);
+}
+
+.slotMiddle {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow: hidden;
+  min-width: 0;
+}
+
+.slotBadge {
+  display: inline-block;
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.slotBadgeGroup {
+  background: color-mix(in srgb, var(--accent-solid) 15%, transparent);
+  color: var(--accent-solid);
+}
+
+.slotBadgeIndividual {
+  background: #ede9fe;
+  color: #7c3aed;
+}
+
+.slotCoachGroup {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.slotCoachAvatar {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.55rem;
+  font-weight: 700;
+  color: var(--accent-foreground);
+  background: var(--accent);
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.slotCoachAvatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.slotCoach {
+  font-size: 0.78rem;
+  color: var(--foreground);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.slotActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+.slotDetailsLink {
+  font-size: 0.8rem;
+  color: var(--accent-solid);
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 0;
+  white-space: nowrap;
+}
+
+.slotDetailsLink:hover {
+  opacity: 0.7;
+}
+
+.slotConfirmBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 20px;
+  border-radius: 12px;
+  border: none;
+  background: var(--accent);
+  color: var(--accent-foreground);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  animation: slideInRight 0.2s ease-out;
+  transition: opacity 0.15s;
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.slotConfirmBtn:hover {
+  opacity: 0.85;
+}
+
+.slotConfirmBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.slotResultMsg {
+  font-size: 0.8rem;
+  margin-top: 6px;
+}
+
+.slotResultMsgSuccess {
+  color: #22c55e;
+}
+
+.slotResultMsgError {
+  color: #ef4444;
+}
+
+/* 6. Staff / coach selection */
+.staffSection {
+  margin: 20px 0;
+}
+
+.staffLabel {
+  font-weight: 600;
+  font-size: 0.95rem;
+  margin-bottom: 8px;
+}
+
+.staffDropdown {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 16px;
+  font-size: 0.95rem;
+  background: var(--background);
+  color: var(--foreground);
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: border-color 0.15s;
+}
+
+.staffDropdown:hover {
+  border-color: var(--accent-solid);
+}
+
+.staffIcon {
+  width: 20px;
+  height: 20px;
+  color: var(--muted);
+  margin-right: 8px;
+}
+
+.staffDropdownInner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.staffDropdownChevron {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+/* 8. Coach selection modal */
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modalContent {
+  background: var(--background);
+  border-radius: 16px;
+  padding: 24px;
+  max-width: 500px;
+  width: 90%;
+  max-height: 85vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+  z-index: 10000;
+  position: relative;
+}
+
+.modalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.modalTitle {
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+.modalClose {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: var(--muted);
+  padding: 4px;
+}
+
+.modalClose:hover {
+  color: var(--foreground);
+}
+
+.detailModalContent {
+  background: var(--background);
+  border-radius: 16px;
+  padding: 0;
+  max-width: 440px;
+  width: 90%;
+  max-height: 85vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+  z-index: 10000;
+  position: relative;
+}
+
+.detailModalHeader {
+  padding: 20px 24px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.detailModalTitleGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.detailModalName {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--foreground);
+}
+
+.detailModalBadge {
+  width: fit-content;
+}
+
+.detailModalClose {
+  background: none;
+  border: none;
+  font-size: 1.3rem;
+  cursor: pointer;
+  color: var(--muted);
+  padding: 4px;
+  line-height: 1;
+  border-radius: 6px;
+  transition: background 0.15s;
+}
+
+.detailModalClose:hover {
+  background: color-mix(in srgb, var(--accent-solid) 8%, transparent);
+}
+
+.detailModalDivider {
+  height: 1px;
+  background: var(--border);
+  margin: 0 24px;
+}
+
+.detailModalCoachSection {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 24px;
+}
+
+.coachAvatarCircle {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: var(--accent-foreground);
+  background: var(--accent);
+  overflow: hidden;
+}
+
+.coachAvatarCircle img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.coachAvatarInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.coachAvatarName {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--foreground);
+}
+
+.coachAvatarRole {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.detailModalStaffRow {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 8px 24px 12px;
+}
+
+.staffMember {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.staffAvatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: #e0e7ff;
+  color: #4f46e5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.6rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.staffAvatarGk {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: #fef3c7;
+  color: #d97706;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.6rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.staffInfo {
+  display: flex;
+  flex-direction: column;
+}
+
+.staffName {
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--foreground);
+}
+
+.staffRole {
+  font-size: 0.62rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  font-weight: 600;
+}
+
+.detailModalBody {
+  padding: 8px 24px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.detailItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0;
+}
+
+.detailItemLabel {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.detailItemValue {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--foreground);
+  text-align: right;
+}
+
+.detailItemLink {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--accent-solid);
+  text-decoration: none;
+  text-align: right;
+}
+
+.detailItemLink:hover {
+  text-decoration: underline;
+}
+
+.detailItemZoomLink {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: white;
+  background: #2d8cff;
+  padding: 4px 12px;
+  border-radius: 6px;
+  text-decoration: none;
+  display: inline-block;
+}
+
+.detailItemZoomLink:hover {
+  background: #1a7ae8;
+}
+
+.modalSubtext {
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin-bottom: 16px;
+}
+
+.coachGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 12px;
+}
+
+.coachCard {
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  padding: 16px 12px;
+  text-align: center;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.15s;
+}
+
+.coachCard:hover {
+  border-color: var(--accent-solid);
+  background: color-mix(in srgb, var(--accent-solid) 6%, transparent);
+}
+
+.coachCardSelected {
+  border-color: var(--accent-solid);
+  box-shadow: 0 0 0 1px var(--accent-solid);
+}
+
+.coachAvatar {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin: 0 auto 8px;
+}
+
+.coachAvatarPlaceholder {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 8px;
+  color: var(--accent-foreground);
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.coachName {
+  font-weight: 600;
+  font-size: 0.9rem;
+  margin-top: 4px;
+}
+
+.coachRole {
+  font-size: 0.8rem;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+.coachLogos {
+  display: flex;
+  gap: 4px;
+  justify-content: center;
+  margin-top: 8px;
+}
+
+.coachLogo {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.coachCheckmark {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  color: var(--accent-solid);
+  font-size: 1.1rem;
+}
+
+/* 9. States */
+.emptyState {
+  text-align: center;
+  color: var(--muted);
+  padding: 32px 16px;
+  font-size: 0.95rem;
+}
+
+.loadingContainer {
+  display: flex;
+  justify-content: center;
+  padding: 32px;
+}
+
+.spinner {
+  width: 28px;
+  height: 28px;
+  border: 3px solid var(--border);
+  border-top-color: var(--accent-solid);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.successMsg {
+  text-align: center;
+  color: #22c55e;
+  font-size: 0.9rem;
+  margin-top: 12px;
+}
+
+.errorMsg {
+  text-align: center;
+  color: #ef4444;
+  font-size: 0.9rem;
+  margin-top: 12px;
+}
+
+/* Show More button */
+.showMoreBtn {
+  display: block;
+  width: 100%;
+  padding: 10px;
+  margin-top: 4px;
+  border: 1px dashed var(--border);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.showMoreBtn:hover {
+  border-color: var(--accent-solid);
+  color: var(--accent-solid);
+  background: color-mix(in srgb, var(--accent-solid) 5%, transparent);
+}
+
+/* Skeleton loader */
+.slotSkeletonContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.slotSkeleton {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  height: 48px;
+}
+
+.skeletonPulse {
+  background: var(--border);
+  animation: skeletonShimmer 1.5s ease-in-out infinite;
+}
+
+@keyframes skeletonShimmer {
+  0% { opacity: 0.4; }
+  50% { opacity: 0.8; }
+  100% { opacity: 0.4; }
+}
+
+/* On narrow screens, hide coach name but keep avatar */
+@media (max-width: 500px) {
+  .slotCoach {
+    display: none;
+  }
+}
+
+/* 12. Responsive (max-width 768px) */
+@media (max-width: 768px) {
+  .scheduleLayout {
+    flex-direction: column;
+  }
+
+  .calendarPanel {
+    width: 100%;
+  }
+
+  .calendarDay {
+    padding: 4px;
+  }
+
+  .dayLabel {
+    font-size: 0.6rem;
+  }
+
+  .dayNumber {
+    width: 30px;
+    height: 30px;
+    font-size: 0.9rem;
+  }
+
+  .coachGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .detailModalContent,
+  .modalContent {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    top: auto;
+    width: 100%;
+    max-width: 100%;
+    border-radius: 20px 20px 0 0;
+    max-height: 85vh;
+  }
+}
+
+/* 13. Session type filter pills */
+.sessionTypeFilters {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.sessionTypeFilterBtn {
+  padding: 6px 14px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: var(--background);
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  color: var(--foreground);
+  transition: all 0.15s;
+}
+
+.sessionTypeFilterBtn:hover {
+  background: color-mix(in srgb, var(--accent-solid) 8%, transparent);
+}
+
+.sessionTypeFilterBtnActive {
+  background: var(--accent);
+  color: var(--accent-foreground);
+  border-color: var(--accent-solid);
+}
+
+/* 14. Empty state message */
+.emptyState {
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.9rem;
+  padding: 32px 16px;
+}
+
+/* 15. Past session state */
+.slotCardPast {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.slotCardPast:hover {
+  border-color: var(--border);
+}
+
+.slotPastLabel {
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--muted);
+  font-style: italic;
+}
+
+/* 15b. Reserved slot card */
+.slotCardReserved {
+  cursor: default;
+  border-left: 3px solid #22c55e;
+  background: color-mix(in srgb, #22c55e 4%, var(--background));
+}
+
+.slotCardReserved:hover {
+  border-color: var(--border);
+  border-left-color: #22c55e;
+}
+
+.slotReservedBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--accent-solid);
+  white-space: nowrap;
+}
+
+/* 15c. Detail modal footer */
+.detailModalFooter {
+  margin-top: 16px;
+  padding-top: none;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.detailModalConfirmBtn {
+  padding: 12px 20px;
+  border-radius: none;
+  border: none;
+  background: var(--accent);
+  color: var(--accent-foreground);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: opacity 0.15s, transform 0.1s;
+  min-height: 61px;
+}
+
+.detailModalConfirmBtn:hover {
+  opacity: 0.92;
+}
+
+.detailModalConfirmBtn:active {
+  transform: scale(0.98);
+}
+
+.detailModalConfirmBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.detailModalReservedRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  background: color-mix(in srgb, #22c55e 6%, var(--background));
+  border: none;
+  border-radius: none;
+  min-height: 61px;
+}
+
+.detailModalReservedLabel {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #22c55e;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.detailModalCancelBtn {
+  padding: 6px 14px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: #ef4444;
+  font-size: 0.78rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.detailModalCancelBtn:hover {
+  background: color-mix(in srgb, #ef4444 10%, transparent);
+}
+
+.detailModalCancelBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.detailModalPastLabel {
+  text-align: center;
+  font-size: 0.82rem;
+  color: var(--muted);
+  padding: 10px 0;
+}
+
+/* 16. Booking button states */
+.confirmBtnSuccess {
+  background: #22c55e !important;
+  color: white !important;
+  animation: none;
+}
+
+.confirmBtnError {
+  background: #ef4444 !important;
+  color: white !important;
+  animation: none;
+}
+
+.confirmSpinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+.bookingErrorMsg {
+  font-size: 0.75rem;
+  color: #ef4444;
+  padding: 4px 0;
+  text-align: right;
+}
+
+/* 16. Responsive (max-width 430px) */
+@media (max-width: 430px) {
+  .sectionTitle {
+    font-size: 1.1rem;
+  }
+}

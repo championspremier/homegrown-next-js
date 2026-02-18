@@ -643,7 +643,10 @@
 }
 
 .modalCardIcon {
-  font-size: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--foreground);
   margin-bottom: 0.5rem;
 }
 

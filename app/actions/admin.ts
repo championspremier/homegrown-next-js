@@ -528,6 +528,7 @@ export type SaveIndividualSessionTypeParams = {
   name: string;
   color: string;
   duration_minutes: number;
+  location_type: "on-field" | "virtual";
   zoom_link?: string | null;
   description?: string | null;
   min_booking_notice_hours: number;
@@ -544,6 +545,7 @@ export type SaveIndividualSessionTypeParams = {
   reminder_body?: string | null;
   coaches: Array<{
     coach_id: string;
+    location?: string | null;
     availability: CoachAvailabilitySlot[];
   }>;
 };
@@ -595,6 +597,18 @@ export async function saveIndividualSessionType(params: SaveIndividualSessionTyp
 
   const timeNorm = (t: string) => (/^\d{1,2}:\d{2}$/.test((t ?? "").trim()) ? `${(t as string).trim()}:00` : (t ?? "").trim());
 
+  let locationTypeValue = params.location_type;
+  if (!locationTypeValue && session_type_id) {
+    const { data: stRow } = await supabase
+      .from("session_types")
+      .select("category")
+      .eq("id", session_type_id.trim())
+      .single();
+    if (stRow) {
+      locationTypeValue = stRow.category === "virtual" ? "virtual" : "on-field";
+    }
+  }
+
   const { data: row, error: insertError } = await supabase
     .from("individual_session_types")
     .insert({
@@ -605,6 +619,7 @@ export async function saveIndividualSessionType(params: SaveIndividualSessionTyp
       duration_minutes: duration_minutes ?? 60,
       zoom_link: zoom_link?.trim() ?? null,
       description: description?.trim() ?? null,
+      location_type: locationTypeValue || "virtual",
       min_booking_notice_hours: min_booking_notice_hours ?? 24,
       buffer_before_minutes: buffer_before_minutes ?? 0,
       buffer_after_minutes: buffer_after_minutes ?? 0,
@@ -643,6 +658,7 @@ export async function saveIndividualSessionType(params: SaveIndividualSessionTyp
         start_time: timeNorm(a.start_time),
         end_time: timeNorm(a.end_time),
         is_active: true,
+        location: coach.location ?? null,
       }));
       await supabase.from("coach_individual_availability").insert(rows);
     }
@@ -695,6 +711,18 @@ export async function updateIndividualSessionType(
 
   const timeNorm = (t: string) => (/^\d{1,2}:\d{2}$/.test((t ?? "").trim()) ? `${(t as string).trim()}:00` : (t ?? "").trim());
 
+  let locationTypeValue = params.location_type;
+  if (!locationTypeValue && session_type_id) {
+    const { data: stRow } = await supabase
+      .from("session_types")
+      .select("category")
+      .eq("id", session_type_id.trim())
+      .single();
+    if (stRow) {
+      locationTypeValue = stRow.category === "virtual" ? "virtual" : "on-field";
+    }
+  }
+
   const { error: updateError } = await supabase
     .from("individual_session_types")
     .update({
@@ -705,6 +733,7 @@ export async function updateIndividualSessionType(
       duration_minutes: duration_minutes ?? 60,
       zoom_link: zoom_link?.trim() ?? null,
       description: description?.trim() ?? null,
+      location_type: locationTypeValue || "virtual",
       min_booking_notice_hours: min_booking_notice_hours ?? 24,
       buffer_before_minutes: buffer_before_minutes ?? 0,
       buffer_after_minutes: buffer_after_minutes ?? 0,
@@ -739,6 +768,7 @@ export async function updateIndividualSessionType(
         start_time: timeNorm(a.start_time),
         end_time: timeNorm(a.end_time),
         is_active: true,
+        location: coach.location ?? null,
       }));
       await supabase.from("coach_individual_availability").insert(rows);
     }

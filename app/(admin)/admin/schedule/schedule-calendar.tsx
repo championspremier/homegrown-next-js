@@ -15,6 +15,8 @@ import {
   type CreateRecurringSessionsParams,
   type UpdateRecurringSessionsParams,
 } from "@/app/actions/admin";
+import { Users, UserCheck } from "lucide-react";
+import { useToast } from "@/components/ui/Toast";
 import type { SessionForCalendar, CoachOption, ProgramOption, SessionTypeOption, IndividualSessionType } from "./page";
 import { IndividualSessionModal } from "./individual-session-modal";
 import formStyles from "@/components/forms.module.css";
@@ -77,6 +79,8 @@ interface ScheduleCalendarProps {
   programs: ProgramOption[];
   sessionTypes: SessionTypeOption[];
   individualSessionTypes?: IndividualSessionType[];
+  role?: "admin" | "coach";
+  currentCoachId?: string;
 }
 
 function getSessionColor(sessionTypeName: string, sessionTypes: SessionTypeOption[]): string {
@@ -132,8 +136,10 @@ function getAvailabilityBlocks(
   return blocks;
 }
 
-export function ScheduleCalendar({ sessions, coaches, programs, sessionTypes, individualSessionTypes = [] }: ScheduleCalendarProps) {
+export function ScheduleCalendar({ sessions, coaches, programs, sessionTypes, individualSessionTypes = [], role = "admin", currentCoachId }: ScheduleCalendarProps) {
   const router = useRouter();
+  const { showToast } = useToast();
+  const isCoach = role === "coach";
   const [weekAnchor, setWeekAnchor] = useState(() => new Date());
   const [viewMode, setViewMode] = useState<"calendar" | "individual">("calendar");
   const [programFilterId, setProgramFilterId] = useState<string>("");
@@ -260,22 +266,27 @@ export function ScheduleCalendar({ sessions, coaches, programs, sessionTypes, in
   }, []);
 
   const chooseIndividualSession = useCallback(() => {
-    setCreateStep(null);
-    if (pendingLocationType === "virtual") {
-      setEditingIndividualSession(null);
-      setIndividualModalOpen(true);
-    } else {
-      setSidebarIsIndividual(true);
-      setSidebarMode("create");
-      setEditingSession(null);
-      setSidebarTab("details");
-      setSidebarError(null);
-      setSidebarOpen(true);
+    if (pendingLocationType === "on-field") {
+      const existingType = individualSessionTypes?.find(
+        (t) => t.location_type === "on-field"
+      );
+      if (existingType) {
+        showToast(
+          `On-field individual session type "${existingType.name}" already exists. Edit it in the Individual Sessions tab.`,
+          "warning"
+        );
+        setCreateStep(null);
+        return;
+      }
     }
-  }, [pendingLocationType]);
+    setCreateStep(null);
+    setEditingIndividualSession(null);
+    setIndividualModalOpen(true);
+  }, [pendingLocationType, individualSessionTypes, showToast]);
 
   const handleSessionBlockClick = useCallback(
     (session: SessionForCalendar) => {
+      if (isCoach && session.coach_id !== currentCoachId) return;
       if (session.recurring_group_id) {
         setScopeModalSession(session);
         setScopeOption("one");
@@ -284,7 +295,7 @@ export function ScheduleCalendar({ sessions, coaches, programs, sessionTypes, in
         openEditSidebar(session, "one");
       }
     },
-    [openEditSidebar]
+    [openEditSidebar, isCoach, currentCoachId]
   );
 
   const closeSidebar = useCallback(() => {
@@ -349,30 +360,34 @@ export function ScheduleCalendar({ sessions, coaches, programs, sessionTypes, in
           <span className={styles.monthYear}>{formatMonthYear(weekAnchor)}</span>
         </div>
         <div className={styles.headerRight}>
-          <div className={styles.viewToggle}>
-            <button
-              type="button"
-              className={`${styles.viewToggleBtn} ${viewMode === "calendar" ? styles.viewToggleBtnActive : ""}`}
-              onClick={() => setViewMode("calendar")}
-            >
-              Calendar
-            </button>
-            <button
-              type="button"
-              className={`${styles.viewToggleBtn} ${viewMode === "individual" ? styles.viewToggleBtnActive : ""}`}
-              onClick={() => setViewMode("individual")}
-            >
-              Individual Sessions
-            </button>
-          </div>
-          <div className={styles.createBtnWrap}>
-            <button type="button" className={styles.createBtn} onClick={openCreateLocationDropdown}>
-              + Create
-            </button>
-            {createDropdownOpen && (
-              <CreateDropdown onChoose={chooseLocation} onClose={() => setCreateDropdownOpen(false)} />
-            )}
-          </div>
+          {!isCoach && (
+            <div className={styles.viewToggle}>
+              <button
+                type="button"
+                className={`${styles.viewToggleBtn} ${viewMode === "calendar" ? styles.viewToggleBtnActive : ""}`}
+                onClick={() => setViewMode("calendar")}
+              >
+                Calendar
+              </button>
+              <button
+                type="button"
+                className={`${styles.viewToggleBtn} ${viewMode === "individual" ? styles.viewToggleBtnActive : ""}`}
+                onClick={() => setViewMode("individual")}
+              >
+                Individual Sessions
+              </button>
+            </div>
+          )}
+          {!isCoach && (
+            <div className={styles.createBtnWrap}>
+              <button type="button" className={styles.createBtn} onClick={openCreateLocationDropdown}>
+                + Create
+              </button>
+              {createDropdownOpen && (
+                <CreateDropdown onChoose={chooseLocation} onClose={() => setCreateDropdownOpen(false)} />
+              )}
+            </div>
+          )}
         </div>
       </div>
 
@@ -510,20 +525,22 @@ export function ScheduleCalendar({ sessions, coaches, programs, sessionTypes, in
       {viewMode === "calendar" && (
         <>
           {/* B) Program filter */}
-          <div className={styles.programFilter}>
-            <select
-              value={programFilterId}
-              onChange={(e) => setProgramFilterId(e.target.value)}
-              aria-label="Filter by program"
-            >
-              <option value="">All Programs</option>
-              {programs.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-            </select>
-          </div>
+          {!isCoach && (
+            <div className={styles.programFilter}>
+              <select
+                value={programFilterId}
+                onChange={(e) => setProgramFilterId(e.target.value)}
+                aria-label="Filter by program"
+              >
+                <option value="">All Programs</option>
+                {programs.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
           {/* C) Weekly calendar grid */}
           <div className={styles.calendarGrid}>
@@ -619,8 +636,9 @@ export function ScheduleCalendar({ sessions, coaches, programs, sessionTypes, in
                             height: `${heightPx}px`,
                             backgroundColor: color,
                           }}
-                          draggable
+                          draggable={!isCoach || session.coach_id === currentCoachId}
                           onMouseEnter={(e) => {
+                            if (isCoach && session.coach_id !== currentCoachId) return;
                             const rect = e.currentTarget.getBoundingClientRect();
                             setTooltipText(session.recurring_group_id ? "Drag to move this session only" : "Drag to move");
                             setTooltipPosition({ x: rect.left + rect.width / 2, y: rect.top - 8 });
@@ -630,6 +648,7 @@ export function ScheduleCalendar({ sessions, coaches, programs, sessionTypes, in
                             setTooltipPosition(null);
                           }}
                           onDragStart={(e) => {
+                            if (isCoach && session.coach_id !== currentCoachId) { e.preventDefault(); return; }
                             setTooltipText(null);
                             setTooltipPosition(null);
                             setDraggedSession(session);
@@ -683,7 +702,7 @@ export function ScheduleCalendar({ sessions, coaches, programs, sessionTypes, in
           }}
           onSaved={() => router.refresh()}
           sessionTypes={sessionTypes}
-          locationType={pendingLocationType}
+          locationType={editingIndividualSession?.location_type || pendingLocationType || "virtual"}
           coaches={coaches}
           programs={programs}
           existingConfig={editingIndividualSession}
@@ -732,6 +751,7 @@ export function ScheduleCalendar({ sessions, coaches, programs, sessionTypes, in
           error={sidebarError}
           onError={setSidebarError}
           onClearError={() => setSidebarError(null)}
+          role={role}
         />
       )}
 
@@ -847,12 +867,12 @@ function SessionTypeChooserModal({
         <h2 className={styles.modalTitle}>{title}</h2>
         <div className={styles.modalCards}>
           <button type="button" className={styles.modalCard} onClick={onGroup}>
-            <div className={styles.modalCardIcon}>👥</div>
+            <div className={styles.modalCardIcon}><Users size={28} strokeWidth={1.8} /></div>
             <div className={styles.modalCardTitle}>Group Session</div>
             <div className={styles.modalCardDesc}>Schedule a group training session</div>
           </button>
           <button type="button" className={styles.modalCard} onClick={onIndividual}>
-            <div className={styles.modalCardIcon}>1:1</div>
+            <div className={styles.modalCardIcon}><UserCheck size={28} strokeWidth={1.8} /></div>
             <div className={styles.modalCardTitle}>One-on-One</div>
             <div className={styles.modalCardDesc}>Configure individual appointment types</div>
           </button>
@@ -883,6 +903,7 @@ interface GroupSessionSidebarProps {
   error: string | null;
   onError: (msg: string | null) => void;
   onClearError: () => void;
+  role?: "admin" | "coach";
 }
 
 function GroupSessionSidebar({
@@ -895,6 +916,7 @@ function GroupSessionSidebar({
   sessionTypes: allSessionTypes,
   homegrownProgram,
   locationType,
+  role: sidebarRole = "admin",
   tab,
   onTabChange,
   onClose,
@@ -906,7 +928,9 @@ function GroupSessionSidebar({
 }: GroupSessionSidebarProps) {
   const router = useRouter();
   const isVirtual = locationType === "virtual";
-  const sessionTypesForForm = getSessionTypesForLocation(allSessionTypes, locationType);
+  const sessionTypesForForm = getSessionTypesForLocation(allSessionTypes, locationType).filter(
+    (t) => !t.allow_individual
+  );
 
   const [repeatsFrequency, setRepeatsFrequency] = useState<RepeatsFrequency>("");
   const [repeatsEnd, setRepeatsEnd] = useState<RepeatsEnd>("never");
@@ -962,7 +986,9 @@ function GroupSessionSidebar({
       setZoomLink(session.zoom_link ?? "");
       setDescription(session.description ?? session.session_plan ?? "");
     } else {
-      const typesForLocation = getSessionTypesForLocation(allSessionTypes, locationType);
+      const typesForLocation = getSessionTypesForLocation(allSessionTypes, locationType).filter(
+        (t) => !t.allow_individual
+      );
       setSessionType(typesForLocation[0]?.name ?? "");
       setTitle("");
       setSessionDate(dateToYMD(new Date()));
@@ -997,7 +1023,12 @@ function GroupSessionSidebar({
 
   const maxDuration = sessionType.toLowerCase().includes("camp") ? 480 : 120;
 
-  const effectiveProgramId = isVirtual && homegrownProgram ? homegrownProgram.id : programId;
+  const effectiveProgramId =
+    isVirtual && homegrownProgram
+      ? homegrownProgram.id
+      : programs.length === 1
+        ? programs[0].id
+        : programId;
 
   const handleSessionTypeChange = (v: string) => {
     setSessionType(v);
@@ -1238,6 +1269,7 @@ function GroupSessionSidebar({
                   {sessionType.toLowerCase().includes("camp") ? " — Camp mode" : ""}
                 </span>
               </div>
+              {programs.length > 1 && (
               <div className={styles.formGroup}>
                 <label className={styles.formLabel}>Program *</label>
                 <select
@@ -1254,8 +1286,9 @@ function GroupSessionSidebar({
                 </select>
                 {isVirtual && <p className={styles.formHint}>Virtual sessions use the Homegrown program.</p>}
               </div>
+              )}
               <div className={styles.formGroup}>
-                <label className={styles.formLabel}>Lead Coach *</label>
+                <label className={styles.formLabel}>Head Coach *</label>
                 <select
                   className={formStyles.formInput}
                   value={coachId}
@@ -1485,7 +1518,7 @@ function GroupSessionSidebar({
         </div>
         <div className={styles.sidebarFooter}>
           <div className={styles.sidebarFooterActions}>
-            {mode === "edit" && (
+            {mode === "edit" && sidebarRole !== "coach" && (
               <button type="button" className={styles.deleteBtn} onClick={handleDelete}>
                 Delete
               </button>

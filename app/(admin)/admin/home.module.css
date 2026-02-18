@@ -1,0 +1,728 @@
+.page {
+  max-width: 900px;
+  width: 92%;
+  margin: 0 auto;
+  padding: 24px 0;
+}
+
+.welcomeSection {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.welcomeTitle {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--foreground);
+  margin: 0;
+}
+
+.nameAccent {
+  background: var(--accent);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.dateLabel {
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+.checkinSection {
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 20px;
+}
+
+.sectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.sectionTitle {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--foreground);
+  margin: 0;
+}
+
+.tabRow {
+  display: flex;
+  gap: 4px;
+  background: var(--surface, var(--background));
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 3px;
+}
+
+.tab {
+  padding: 6px 14px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.tab:hover {
+  color: var(--foreground);
+}
+
+.tabActive {
+  background: var(--accent);
+  color: var(--accent-foreground, white);
+}
+
+.sectionHint {
+  font-size: 0.78rem;
+  color: var(--muted);
+  margin: 0 0 16px 0;
+}
+
+.sessionsList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sessionItem {
+  background: var(--surface, var(--background));
+  border: 1px solid var(--border);
+  border-left: 4px solid #3b82f6;
+  border-radius: 10px;
+  padding: 14px 16px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.sessionItem:hover {
+  border-color: var(--foreground);
+  border-left-width: 4px;
+}
+
+.sessionItemHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.sessionItemLeft {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.sessionItemName {
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--foreground);
+}
+
+.sessionItemTime {
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.sessionItemPlayer {
+  font-size: 0.78rem;
+  color: var(--foreground);
+  font-weight: 500;
+}
+
+.sessionItemAttendees {
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+.sessionItemRight {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.sessionCoachBubble {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: #dbeafe;
+  color: #2563eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.65rem;
+  font-weight: 700;
+  border: 2px solid var(--background);
+}
+
+.sessionPlayerBubble {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: #e0e7ff;
+  color: #4f46e5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.65rem;
+  font-weight: 700;
+  margin-left: -8px;
+  border: 2px solid var(--background);
+}
+
+.staffSection {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.staffMember {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.staffAvatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #dbeafe;
+  color: #2563eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.6rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.staffAvatarAssistant {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #e0e7ff;
+  color: #4f46e5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.6rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.staffAvatarGk {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #fef3c7;
+  color: #d97706;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.6rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.staffInfo {
+  display: flex;
+  flex-direction: column;
+}
+
+.staffName {
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--foreground);
+}
+
+.staffRole {
+  font-size: 0.65rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  font-weight: 600;
+}
+
+.playersSection {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.playersSectionTitle {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--foreground);
+  margin: 0 0 4px 0;
+}
+
+.noPlayers {
+  font-size: 0.78rem;
+  color: var(--muted);
+  margin: 0;
+}
+
+.playerRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 0;
+}
+
+.playerAvatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--border);
+  color: var(--foreground);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.6rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.playerInfo {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.playerName {
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--foreground);
+}
+
+.playerPositions {
+  font-size: 0.65rem;
+  color: var(--muted);
+}
+
+.checkInBtn {
+  padding: 6px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--accent-solid, #3b82f6);
+  background: transparent;
+  color: var(--accent-solid, #3b82f6);
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+
+.checkInBtn:hover:not(:disabled) {
+  background: var(--accent-solid, #3b82f6);
+  color: white;
+}
+
+.checkInBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.checkInBtnDone {
+  border-color: #22c55e;
+  color: #22c55e;
+  background: color-mix(in srgb, #22c55e 6%, transparent);
+}
+
+.checkInBtnDone:hover:not(:disabled) {
+  background: color-mix(in srgb, #22c55e 12%, transparent);
+  color: #22c55e;
+}
+
+.emptyState {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--muted);
+}
+
+.emptyIcon {
+  font-size: 2rem;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.sessionTypeBadge {
+  display: inline;
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: var(--accent-solid, #3b82f6);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.dateGroup {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--muted);
+  padding: 8px 0 4px;
+}
+
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.modalContent {
+  background: var(--background);
+  border-radius: 16px;
+  width: 100%;
+  max-width: 520px;
+  max-height: 85vh;
+  overflow-y: auto;
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.2);
+}
+
+.modalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 20px 20px 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.modalTitle {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--foreground);
+  margin: 0;
+}
+
+.modalBadge {
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: var(--accent-solid, #3b82f6);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.modalHeaderActions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.modalEditBtn {
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: var(--hover, rgba(0, 0, 0, 0.05));
+  border-radius: 8px;
+  font-size: 1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--foreground);
+  transition: background 0.15s;
+}
+
+.modalEditBtn:hover {
+  background: var(--border);
+}
+
+.modalCloseBtn {
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  border-radius: 8px;
+  font-size: 1.1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+  transition: all 0.15s;
+}
+
+.modalCloseBtn:hover {
+  background: var(--hover);
+  color: var(--foreground);
+}
+
+.modalMeta {
+  padding: 14px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.modalMetaRow {
+  display: flex;
+  justify-content: space-between;
+}
+
+.modalMetaLabel {
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.modalMetaValue {
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--foreground);
+}
+
+.modalStaff {
+  padding: 14px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.modalPlayers {
+  padding: 14px 20px;
+}
+
+.modalPlayersHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.modalPlayersList {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.checkInAllBtn {
+  padding: 6px 14px;
+  border-radius: 8px;
+  border: none;
+  background: var(--accent);
+  color: var(--accent-foreground, white);
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.checkInAllBtn:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.checkInAllBtn:disabled {
+  opacity: 0.5;
+}
+
+.editMenu {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: var(--background);
+  border-radius: 12px;
+  padding: 6px;
+  min-width: 200px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+.editMenuItem {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border: none;
+  background: transparent;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--foreground);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.editMenuItem:hover {
+  background: var(--hover);
+}
+
+.editMenuItemDanger {
+  color: #ef4444;
+}
+
+.subModalContent {
+  background: var(--background);
+  border-radius: 14px;
+  width: 100%;
+  max-width: 400px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+.subModalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.subModalHeader h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0;
+  color: var(--foreground);
+}
+
+.subModalBody {
+  padding: 16px 20px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.subModalFooter {
+  padding: 12px 20px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: flex-end;
+}
+
+.staffRadioRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.staffRadioRow:hover {
+  background: var(--hover);
+}
+
+.staffRadioRow input[type="radio"] {
+  margin: 0;
+}
+
+.formLabel {
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--foreground);
+  margin-bottom: 8px;
+  display: block;
+}
+
+.formInput {
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--background);
+  color: var(--foreground);
+  font-size: 0.85rem;
+  flex: 1;
+}
+
+.formInput:focus {
+  outline: none;
+  border-color: var(--accent-solid, #3b82f6);
+}
+
+.rescheduleInputs {
+  display: flex;
+  gap: 10px;
+}
+
+.saveBtn {
+  padding: 10px 20px;
+  border-radius: 10px;
+  border: none;
+  background: var(--accent);
+  color: var(--accent-foreground, white);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.saveBtn:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.saveBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+@media (max-width: 768px) {
+  .page {
+    width: 100%;
+    padding: 16px;
+  }
+
+  .sectionHeader {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .sessionItemRight {
+    display: none;
+  }
+
+  .modalOverlay {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .modalContent {
+    border-radius: 20px 20px 0 0;
+    max-height: 90vh;
+  }
+
+  .modalContent::before {
+    content: "";
+    display: block;
+    width: 36px;
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    margin: 8px auto;
+  }
+
+  .editMenu {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    top: auto;
+    transform: none;
+    border-radius: 20px 20px 0 0;
+    padding: 8px 8px 20px;
+  }
+
+  .subModalContent {
+    max-width: 100%;
+    border-radius: 20px 20px 0 0;
+  }
+}

@@ -1,67 +1,80 @@
 import { createClient } from "@/lib/supabase/server";
-import { AvailabilityManager } from "./availability-manager";
-import styles from "@/components/layout/layout.module.css";
+import { requireRole } from "@/lib/auth";
+import AvailabilityClient from "@/app/(coach)/coach/availability/availability-client";
 
 export const dynamic = "force-dynamic";
 
-type SearchParams = Promise<{ coach?: string }> | { coach?: string };
-
-export default async function AdminAvailabilityPage({
-  searchParams,
-}: {
-  searchParams?: SearchParams;
-}) {
+export default async function AdminAvailabilityPage() {
+  const { user, profile } = await requireRole("admin");
+  const coachId = profile.id ?? user.id;
   const supabase = await createClient();
 
+  // Fetch all coaches and admins for the switcher
   const { data: coachesData } = await supabase
     .from("profiles")
-    .select("id, full_name, email")
-    .eq("role", "coach")
-    .order("full_name", { nullsFirst: false });
+    .select("id, full_name, first_name, last_name, role")
+    .in("role", ["coach", "admin"])
+    .order("full_name");
 
-  const coaches = (coachesData ?? []).map((c: { id: string; full_name: string | null; email: string | null }) => ({
-    id: c.id,
-    full_name: c.full_name ?? null,
-    email: c.email ?? null,
-  }));
+  const coachList = (coachesData || []).map(
+    (c: { id: string; full_name: string | null; first_name: string | null; last_name: string | null }) => ({
+      id: c.id,
+      name:
+        c.full_name ||
+        `${c.first_name || ""} ${c.last_name || ""}`.trim() ||
+        "Coach",
+    })
+  );
 
-  const resolved = searchParams && typeof (searchParams as Promise<unknown>).then === "function"
-    ? await (searchParams as Promise<{ coach?: string }>)
-    : (searchParams as { coach?: string }) ?? {};
-  const coachParam = resolved.coach;
-  const selectedCoachId =
-    coachParam && coaches.some((c) => c.id === coachParam)
-      ? coachParam
-      : coaches[0]?.id ?? null;
+  // Fetch initial data for the default coach (the admin themselves)
+  const [
+    { data: recurringAvailability },
+    { data: dateOverrides },
+    { data: assignedTypes },
+  ] = await Promise.all([
+    supabase
+      .from("coach_individual_availability")
+      .select("id, individual_session_type_id, day_of_week, start_time, end_time, is_active")
+      .eq("coach_id", coachId)
+      .eq("is_active", true),
+    supabase
+      .from("coach_date_overrides")
+      .select("id, override_date, is_blocked, custom_start_time, custom_end_time, reason")
+      .eq("coach_id", coachId),
+    supabase
+      .from("coach_individual_availability")
+      .select("individual_session_type_id, individual_session_types(id, name, color, location_type)")
+      .eq("coach_id", coachId)
+      .eq("is_active", true),
+  ]);
 
-  let availability: { id: string; day_of_week: number; start_time: string; end_time: string; created_at: string }[] = [];
-  if (selectedCoachId) {
-    const { data: rows } = await supabase
-      .from("coach_availability")
-      .select("id, day_of_week, start_time, end_time, created_at")
-      .eq("coach_id", selectedCoachId)
-      .order("day_of_week", { ascending: true })
-      .order("start_time", { ascending: true });
-    availability = (rows ?? []).map((r) => ({
-      id: r.id,
-      day_of_week: r.day_of_week,
-      start_time: typeof r.start_time === "string" ? r.start_time : String(r.start_time),
-      end_time: typeof r.end_time === "string" ? r.end_time : String(r.end_time),
-      created_at: r.created_at,
-    }));
-  }
+  const sessionTypes = Array.from(
+    new Map(
+      (assignedTypes || [])
+        .filter((a: Record<string, unknown>) => a.individual_session_types)
+        .map((a: Record<string, unknown>) => {
+          const st = a.individual_session_types as { id: string; name: string; color: string | null; location_type: string };
+          return [st.id, st] as const;
+        })
+    ).values()
+  );
 
   return (
-    <div>
-      <h1 className={styles.pageTitle}>Availability</h1>
-      <p className={styles.muted}>
-        Manage coach availability by day and time. Only admins can edit.
-      </p>
-      <AvailabilityManager
-        coaches={coaches}
-        selectedCoachId={selectedCoachId}
-        availability={availability}
-      />
-    </div>
+    <AvailabilityClient
+      coachId={coachId}
+      coachName={(profile.full_name as string) || (profile.first_name as string) || "Admin"}
+      recurringAvailability={recurringAvailability || []}
+      dateOverrides={(dateOverrides || []).map((d: Record<string, unknown>) => ({
+        id: d.id as string,
+        override_date: d.override_date as string,
+        is_blocked: d.is_blocked as boolean,
+        custom_start_time: (d.custom_start_time as string) || null,
+        custom_end_time: (d.custom_end_time as string) || null,
+        reason: (d.reason as string) || null,
+      }))}
+      sessionTypes={sessionTypes}
+      isAdmin={true}
+      coaches={coachList}
+    />
   );
 }

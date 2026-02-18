@@ -1,0 +1,432 @@
+.page {
+  max-width: 900px;
+  width: 90%;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.pageTitle {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--foreground);
+  margin-bottom: 4px;
+}
+
+.pageSubtitle {
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin-bottom: 24px;
+}
+
+/* Admin coach switcher */
+.coachSwitcher {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+  padding: 12px 16px;
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.coachSwitcherLabel {
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.coachSwitcherSelect {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--background);
+  color: var(--foreground);
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.loadingOverlay {
+  text-align: center;
+  padding: 20px;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+/* Recurring schedule summary */
+.recurringSection {
+  margin-bottom: 28px;
+}
+
+.sectionTitle {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--foreground);
+  margin-bottom: 10px;
+}
+
+.recurringGrid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  margin-bottom: 10px;
+}
+
+.recurringDay {
+  text-align: center;
+  padding: 8px 4px;
+  border-radius: 8px;
+  background: var(--background);
+  border: 1px solid var(--border);
+}
+
+.recurringDayActive {
+  border-color: #22c55e;
+  background: color-mix(in srgb, #22c55e 6%, var(--background));
+}
+
+.recurringDayName {
+  display: block;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--muted);
+  margin-bottom: 2px;
+}
+
+.recurringDayHours {
+  display: block;
+  font-size: 0.6rem;
+  color: var(--foreground);
+}
+
+.sessionTypeTags {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
+.sessionTypeTag {
+  font-size: 0.68rem;
+  padding: 3px 8px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  color: var(--muted);
+}
+
+/* Monthly calendar */
+.calendarSection {
+  margin-bottom: 24px;
+}
+
+.calendarHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.calendarMonthTitle {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--foreground);
+}
+
+.calendarNavBtn {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  color: var(--foreground);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.calendarNavBtn:hover {
+  background: var(--hover);
+}
+
+.calendarGrid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+
+.calendarDayHeader {
+  text-align: center;
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  padding: 6px 0;
+}
+
+.calendarDayEmpty {
+  aspect-ratio: 1;
+}
+
+.calendarDay {
+  aspect-ratio: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  border: 2px solid transparent;
+  background: var(--background);
+  cursor: pointer;
+  position: relative;
+  transition: all 0.15s;
+  gap: 2px;
+}
+
+.calendarDay:hover:not(:disabled) {
+  background: var(--hover);
+}
+
+.calendarDayNum {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--foreground);
+}
+
+.calendarDayToday {
+  border-color: var(--accent-solid);
+}
+
+.calendarDayToday .calendarDayNum {
+  font-weight: 700;
+}
+
+.calendarDayPast {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.calendarDayAvailable {
+  background: color-mix(in srgb, #22c55e 8%, var(--background));
+}
+
+.calendarDayBlocked {
+  background: color-mix(in srgb, #ef4444 10%, var(--background));
+}
+
+.calendarDayBlocked .calendarDayNum {
+  color: #ef4444;
+  text-decoration: line-through;
+}
+
+.calendarDaySelected {
+  border-color: var(--accent-solid);
+  box-shadow: 0 0 0 1px var(--accent-solid);
+}
+
+.calendarDayBlockedIcon {
+  font-size: 0.55rem;
+  color: #ef4444;
+  font-weight: 700;
+}
+
+.calendarDayDot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #22c55e;
+}
+
+.calendarDaySaving {
+  font-size: 0.5rem;
+  color: var(--muted);
+}
+
+/* Date detail panel */
+.dateDetailPanel {
+  margin-top: 12px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--background);
+  animation: fadeIn 0.15s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.dateDetailHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.dateDetailTitle {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--foreground);
+}
+
+.dateDetailClose {
+  background: none;
+  border: none;
+  font-size: 1rem;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.dateDetailBody {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.dateDetailStatus {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.statusAvailable {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #22c55e;
+}
+
+.statusBlocked {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #ef4444;
+}
+
+.statusOff {
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.statusHint {
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+.reasonInput {
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 0.82rem;
+  background: var(--background);
+  color: var(--foreground);
+  outline: none;
+}
+
+.reasonInput:focus {
+  border-color: var(--accent-solid);
+}
+
+.blockBtn {
+  padding: 10px;
+  border-radius: 10px;
+  border: none;
+  background: #ef4444;
+  color: white;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.blockBtn:hover {
+  opacity: 0.9;
+}
+
+.blockBtn:disabled {
+  opacity: 0.5;
+}
+
+.unblockBtn {
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px solid #22c55e;
+  background: transparent;
+  color: #22c55e;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.unblockBtn:hover {
+  background: #22c55e;
+  color: white;
+}
+
+.unblockBtn:disabled {
+  opacity: 0.5;
+}
+
+.bookingWarning {
+  font-size: 0.75rem;
+  color: #f59e0b;
+  padding: 8px 10px;
+  background: color-mix(in srgb, #f59e0b 8%, var(--background));
+  border-radius: 6px;
+  margin: 0;
+}
+
+/* Legend */
+.legend {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+.legendDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  .page {
+    padding: 16px;
+  }
+
+  .recurringGrid {
+    gap: 3px;
+  }
+
+  .recurringDayHours {
+    font-size: 0.55rem;
+  }
+
+  .calendarDay {
+    border-radius: 8px;
+  }
+
+  .calendarDayNum {
+    font-size: 0.78rem;
+  }
+}

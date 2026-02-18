@@ -42,6 +42,7 @@ export type SessionTypeOption = {
   program_id: string | null;
   is_default: boolean;
   sort_order: number;
+  allow_individual?: boolean;
 };
 
 export type CoachIndividualAvailabilityRow = {
@@ -75,6 +76,7 @@ export type IndividualSessionType = {
   reminder_hours_before: number | null;
   reminder_subject: string | null;
   reminder_body: string | null;
+  location_type?: "on-field" | "virtual";
   is_active: boolean;
   created_at: string;
   updated_at: string;
@@ -143,7 +145,7 @@ export default async function AdminSchedulePage() {
 
   const { data: sessionTypesData } = await supabase
     .from("session_types")
-    .select("id, name, color, category, program_id, is_default, sort_order")
+    .select("id, name, color, category, program_id, is_default, sort_order, allow_individual")
     .eq("is_active", true)
     .order("sort_order", { ascending: true });
 
@@ -156,6 +158,7 @@ export default async function AdminSchedulePage() {
       program_id: row.program_id as string | null,
       is_default: (row.is_default as boolean) ?? false,
       sort_order: (row.sort_order as number) ?? 0,
+      allow_individual: (row.allow_individual as boolean) ?? false,
     })
   );
 
@@ -187,6 +190,7 @@ export default async function AdminSchedulePage() {
       reminder_hours_before: (row.reminder_hours_before as number) ?? null,
       reminder_subject: (row.reminder_subject as string) ?? null,
       reminder_body: (row.reminder_body as string) ?? null,
+      location_type: (row.location_type as "on-field" | "virtual") ?? undefined,
       is_active: (row.is_active as boolean) ?? true,
       created_at: (row.created_at as string) ?? "",
       updated_at: (row.updated_at as string) ?? "",

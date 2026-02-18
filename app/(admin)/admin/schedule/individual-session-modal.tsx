@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { Settings } from "lucide-react";
 import {
   saveIndividualSessionType,
   updateIndividualSessionType,
@@ -18,6 +19,7 @@ export type SessionTypeOption = {
   program_id: string | null;
   is_default: boolean;
   sort_order: number;
+  allow_individual?: boolean;
 };
 
 export type CoachOption = { id: string; display_name: string };
@@ -52,6 +54,7 @@ export type IndividualSessionType = {
     start_time: string;
     end_time: string;
     is_active: boolean;
+    location?: string;
   }>;
 };
 
@@ -122,15 +125,19 @@ export function IndividualSessionModal({
   const [reminderHoursBefore, setReminderHoursBefore] = useState(24);
   const [reminderSubject, setReminderSubject] = useState("Session Reminder");
   const [reminderBody, setReminderBody] = useState("You have a session coming up.");
+  const [coachLocations, setCoachLocations] = useState<Record<string, string>>({});
+  const [showAdvancedSettings, setShowAdvancedSettings] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const coachDropdownRef = useRef<HTMLDivElement>(null);
 
   const sessionTypesByLocation = useMemo(
-    () =>
-      locationType === "on-field"
+    () => {
+      const byLocation = locationType === "on-field"
         ? sessionTypes.filter((t) => t.category === "on-field" || t.category === "both")
-        : sessionTypes.filter((t) => t.category === "virtual" || t.category === "both"),
+        : sessionTypes.filter((t) => t.category === "virtual" || t.category === "both");
+      return byLocation.filter((t) => t.allow_individual !== false);
+    },
     [sessionTypes, locationType]
   );
 
@@ -189,14 +196,25 @@ export function IndividualSessionModal({
       const avail: Record<string, Record<number, { start_time: string; end_time: string; is_active: boolean }>> = {};
       coachIds.forEach((cid) => {
         avail[cid] = {};
+        const hasAnyRows = (existingConfig.coach_individual_availability ?? []).some((a) => a.coach_id === cid);
         DAYS.forEach((d) => {
           const slot = (existingConfig.coach_individual_availability ?? []).find((a) => a.coach_id === cid && a.day_of_week === d.value);
           avail[cid][d.value] = slot
             ? { start_time: slot.start_time?.slice(0, 5) ?? "09:00", end_time: slot.end_time?.slice(0, 5) ?? "17:00", is_active: !!slot.is_active }
-            : defaultDaySlot(d.value);
+            : hasAnyRows
+              ? { start_time: "09:00", end_time: "17:00", is_active: false }
+              : defaultDaySlot(d.value);
         });
       });
       setCoachAvailability(avail);
+      const locations: Record<string, string> = {};
+      coachIds.forEach((cid) => {
+        const firstRow = (existingConfig.coach_individual_availability ?? []).find(
+          (a) => a.coach_id === cid && a.location
+        );
+        if (firstRow?.location) locations[cid] = firstRow.location;
+      });
+      setCoachLocations(locations);
     } else {
       setSessionTypeId(availableSessionTypes[0]?.id ?? "");
       setName(availableSessionTypes[0]?.name ?? "");
@@ -206,11 +224,19 @@ export function IndividualSessionModal({
       setZoomLink("");
       setLocation("");
       setDescription("");
-      setMinBookingNoticeHours(24);
-      setBufferBeforeMinutes(0);
-      setBufferAfterMinutes(0);
-      setTimeSlotGranularity(30);
-      setLateCancelHours(24);
+      if (locationType === "virtual") {
+        setTimeSlotGranularity(15);
+        setBufferBeforeMinutes(5);
+        setBufferAfterMinutes(5);
+        setLateCancelHours(2);
+        setMinBookingNoticeHours(8);
+      } else {
+        setTimeSlotGranularity(30);
+        setBufferBeforeMinutes(0);
+        setBufferAfterMinutes(0);
+        setLateCancelHours(2);
+        setMinBookingNoticeHours(8);
+      }
       setBookingConfirmationEnabled(true);
       setBookingConfirmationSubject("Booking Confirmation");
       setBookingConfirmationBody("Your session has been confirmed.");
@@ -220,6 +246,7 @@ export function IndividualSessionModal({
       setReminderBody("You have a session coming up.");
       setSelectedCoachIds([]);
       setCoachAvailability({});
+      setCoachLocations({});
     }
     setError(null);
     setActiveTab("details");
@@ -270,9 +297,22 @@ export function IndividualSessionModal({
       return;
     }
 
+    for (const cid of selectedCoachIds) {
+      for (const d of DAYS) {
+        const slot = getCoachDaySlot(cid, d.value);
+        if (!slot.is_active) continue;
+        if (slot.start_time >= slot.end_time) {
+          const coachName = coaches.find((c) => c.id === cid)?.display_name ?? "Coach";
+          setError(`${coachName}: ${d.label} start time must be before end time`);
+          return;
+        }
+      }
+    }
+
     setSaving(true);
     const coachesPayload = selectedCoachIds.map((coach_id) => ({
       coach_id,
+      location: coachLocations[coach_id]?.trim() || null,
       availability: DAYS.map((d) => {
         const s = getCoachDaySlot(coach_id, d.value);
         return {
@@ -283,9 +323,6 @@ export function IndividualSessionModal({
         };
       }),
     }));
-    if (process.env.NODE_ENV === "development") {
-      console.log("Saving coaches:", selectedCoachIds, coachAvailability);
-    }
 
     const params: SaveIndividualSessionTypeParams = {
       session_type_id: existingConfig?.session_type_id ?? sessionTypeId,
@@ -293,6 +330,7 @@ export function IndividualSessionModal({
       name: name.trim(),
       color,
       duration_minutes: durationMinutes,
+      location_type: locationType,
       zoom_link: zoomLink.trim() || null,
       description: description.trim() || null,
       min_booking_notice_hours: minBookingNoticeHours,
@@ -519,6 +557,29 @@ export function IndividualSessionModal({
                           </button>
                           {isExpanded && (
                             <div className={styles.coachAccordionBody}>
+                              {locationType === "on-field" ? (
+                                <div className={styles.formGroup} style={{ marginBottom: 12 }}>
+                                  <label className={styles.label}>Location</label>
+                                  <input
+                                    type="text"
+                                    className={styles.input}
+                                    placeholder="Field / venue name"
+                                    value={coachLocations[coachId] ?? ""}
+                                    onChange={(e) => setCoachLocations((prev) => ({ ...prev, [coachId]: e.target.value }))}
+                                  />
+                                </div>
+                              ) : (
+                                <div className={styles.formGroup} style={{ marginBottom: 12 }}>
+                                  <label className={styles.label}>Zoom Link</label>
+                                  <input
+                                    type="url"
+                                    className={styles.input}
+                                    placeholder="https://zoom.us/j/..."
+                                    value={coachLocations[coachId] ?? ""}
+                                    onChange={(e) => setCoachLocations((prev) => ({ ...prev, [coachId]: e.target.value }))}
+                                  />
+                                </div>
+                              )}
                               <div className={styles.availabilityGrid}>
                                 {DAYS.map((d) => {
                                   const slot = getCoachDaySlot(coachId, d.value);
@@ -546,6 +607,11 @@ export function IndividualSessionModal({
                                         onChange={(e) => setCoachDaySlot(coachId, d.value, "end_time", e.target.value)}
                                         disabled={!slot.is_active}
                                       />
+                                      {slot.is_active && slot.start_time >= slot.end_time && (
+                                        <span style={{ color: "#ef4444", fontSize: "0.75rem", marginLeft: 4 }}>
+                                          Start must be before end
+                                        </span>
+                                      )}
                                     </div>
                                   );
                                 })}
@@ -565,7 +631,7 @@ export function IndividualSessionModal({
             <>
               {locationType === "virtual" && (
                 <div className={styles.formGroup}>
-                  <label className={styles.label}>Zoom Link</label>
+                  <label className={styles.label}>Default Zoom Link</label>
                   <input
                     type="url"
                     className={styles.input}
@@ -573,18 +639,7 @@ export function IndividualSessionModal({
                     onChange={(e) => setZoomLink(e.target.value)}
                     placeholder="https://zoom.us/j/..."
                   />
-                </div>
-              )}
-              {locationType === "on-field" && (
-                <div className={styles.formGroup}>
-                  <label className={styles.label}>Location</label>
-                  <input
-                    type="text"
-                    className={styles.input}
-                    value={location}
-                    onChange={(e) => setLocation(e.target.value)}
-                    placeholder="Field / venue name"
-                  />
+                  <p className={styles.formHint}>Coaches can set their own link in the Details tab.</p>
                 </div>
               )}
               <div className={styles.formGroup}>
@@ -596,75 +651,104 @@ export function IndividualSessionModal({
                   placeholder="Enter description..."
                 />
               </div>
-              <div className={styles.formGroup}>
-                <label className={styles.label}>Minimum Booking Notice (hours)</label>
-                <select
-                  className={styles.select}
-                  value={minBookingNoticeHours}
-                  onChange={(e) => setMinBookingNoticeHours(parseInt(e.target.value, 10))}
+
+              <div className={styles.advancedToggleSection}>
+                <button
+                  type="button"
+                  className={styles.advancedToggle}
+                  onClick={() => setShowAdvancedSettings((v) => !v)}
                 >
-                  {[1, 2, 4, 8, 12, 24].map((h) => (
-                    <option key={h} value={h}>
-                      {h} hour{h !== 1 ? "s" : ""}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className={styles.formGroup}>
-                <label className={styles.label}>Buffer Before Session (minutes)</label>
-                <select
-                  className={styles.select}
-                  value={bufferBeforeMinutes}
-                  onChange={(e) => setBufferBeforeMinutes(parseInt(e.target.value, 10))}
-                >
-                  {[0, 5, 10, 15, 30].map((m) => (
-                    <option key={m} value={m}>
-                      {m} min
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className={styles.formGroup}>
-                <label className={styles.label}>Buffer After Session (minutes)</label>
-                <select
-                  className={styles.select}
-                  value={bufferAfterMinutes}
-                  onChange={(e) => setBufferAfterMinutes(parseInt(e.target.value, 10))}
-                >
-                  {[0, 5, 10, 15, 30].map((m) => (
-                    <option key={m} value={m}>
-                      {m} min
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className={styles.formGroup}>
-                <label className={styles.label}>Time Slot Granularity (minutes)</label>
-                <select
-                  className={styles.select}
-                  value={timeSlotGranularity}
-                  onChange={(e) => setTimeSlotGranularity(parseInt(e.target.value, 10))}
-                >
-                  {[15, 20, 30, 60].map((m) => (
-                    <option key={m} value={m}>
-                      {m} min
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className={styles.formGroup}>
-                <label className={styles.label}>Late Cancellation Policy (hours before)</label>
-                <select
-                  className={styles.select}
-                  value={lateCancelHours}
-                  onChange={(e) => setLateCancelHours(parseInt(e.target.value, 10))}
-                >
-                  {[2, 4, 8, 12, 24, 48].map((h) => (
-                    <option key={h} value={h}>
-                      {h} hours
-                    </option>
-                  ))}
-                </select>
+                  <span className={styles.advancedToggleLabel}>
+                    <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      <Settings size={16} />
+                      Booking Defaults
+                    </span>
+                    <span className={styles.advancedToggleHint}>
+                      {showAdvancedSettings
+                        ? "Adjust scheduling rules for this session type"
+                        : `${timeSlotGranularity} min slots \u00B7 ${bufferBeforeMinutes > 0 ? `${bufferBeforeMinutes} min buffers` : "no buffers"} \u00B7 ${minBookingNoticeHours} hr notice \u00B7 ${lateCancelHours} hr cancel`
+                      }
+                    </span>
+                  </span>
+                  <span>{showAdvancedSettings ? "\u25BE" : "\u25B8"}</span>
+                </button>
+
+                {showAdvancedSettings && (
+                  <div className={styles.advancedBody}>
+                    <p className={styles.advancedDisclaimer}>
+                      These defaults apply to all coaches for this session type. Only change if needed.
+                    </p>
+                    <div className={styles.formGroup}>
+                      <label className={styles.label}>Time Slot Granularity (minutes)</label>
+                      <select
+                        className={styles.select}
+                        value={timeSlotGranularity}
+                        onChange={(e) => setTimeSlotGranularity(parseInt(e.target.value, 10))}
+                      >
+                        {[15, 20, 30, 60].map((m) => (
+                          <option key={m} value={m}>{m} min</option>
+                        ))}
+                      </select>
+                      <p className={styles.formHint}>
+                        How often slots appear (e.g. 15 min = 4:00, 4:15, 4:30...)
+                      </p>
+                    </div>
+                    <div className={styles.formGroup}>
+                      <label className={styles.label}>Minimum Booking Notice (hours)</label>
+                      <select
+                        className={styles.select}
+                        value={minBookingNoticeHours}
+                        onChange={(e) => setMinBookingNoticeHours(parseInt(e.target.value, 10))}
+                      >
+                        {[1, 2, 4, 8, 12, 24].map((h) => (
+                          <option key={h} value={h}>{h} hour{h !== 1 ? "s" : ""}</option>
+                        ))}
+                      </select>
+                      <p className={styles.formHint}>
+                        Players can&apos;t book within this window
+                      </p>
+                    </div>
+                    <div className={styles.formGroup}>
+                      <label className={styles.label}>Buffer Before Session (minutes)</label>
+                      <select
+                        className={styles.select}
+                        value={bufferBeforeMinutes}
+                        onChange={(e) => setBufferBeforeMinutes(parseInt(e.target.value, 10))}
+                      >
+                        {[0, 5, 10, 15, 30].map((m) => (
+                          <option key={m} value={m}>{m} min</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className={styles.formGroup}>
+                      <label className={styles.label}>Buffer After Session (minutes)</label>
+                      <select
+                        className={styles.select}
+                        value={bufferAfterMinutes}
+                        onChange={(e) => setBufferAfterMinutes(parseInt(e.target.value, 10))}
+                      >
+                        {[0, 5, 10, 15, 30].map((m) => (
+                          <option key={m} value={m}>{m} min</option>
+                        ))}
+                      </select>
+                      <p className={styles.formHint}>
+                        Buffers prevent back-to-back bookings (e.g. 5 min buffer blocks nearby slots when one is booked)
+                      </p>
+                    </div>
+                    <div className={styles.formGroup}>
+                      <label className={styles.label}>Late Cancellation Policy (hours before)</label>
+                      <select
+                        className={styles.select}
+                        value={lateCancelHours}
+                        onChange={(e) => setLateCancelHours(parseInt(e.target.value, 10))}
+                      >
+                        {[2, 4, 8, 12, 24, 48].map((h) => (
+                          <option key={h} value={h}>{h} hours</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                )}
               </div>
             </>
           )}

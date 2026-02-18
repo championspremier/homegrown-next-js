@@ -26,10 +26,9 @@ const PLAYER_NAV: NavItem[] = [
 const COACH_NAV: NavItem[] = [
   { href: "/coach", label: "Home" },
   { href: "/coach/schedule", label: "Schedule" },
+  { href: "/coach/availability", label: "Availability" },
   { href: "/coach/people", label: "People" },
   { href: "/coach/communicate", label: "Communicate" },
-  { href: "/coach/payments", label: "Payments" },
-  { href: "/coach/plans", label: "Plans" },
   { href: "/coach/solo-create", label: "Solo Create" },
   { href: "/coach/settings", label: "Settings" },
   { href: "/coach/profile", label: "Profile" },
