@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import LoginForm from "./login-form";
+import LoginClient from "./login-client";
 
 export const dynamic = "force-dynamic";
 
@@ -14,5 +14,5 @@ export default async function LoginPage() {
   } catch {
     // show login form even if Supabase fails (e.g. missing env)
   }
-  return <LoginForm />;
+  return <LoginClient />;
 }

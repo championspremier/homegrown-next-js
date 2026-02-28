@@ -1,0 +1,170 @@
+.container {
+  max-width: 1100px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 20px 16px 40px;
+}
+
+/* Shimmer animation */
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--hover, rgba(0, 0, 0, 0.06)) 25%,
+    rgba(0, 0, 0, 0.03) 50%,
+    var(--hover, rgba(0, 0, 0, 0.06)) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+  border-radius: 8px;
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* Leaderboard */
+.leaderboardRow {
+  display: flex;
+  gap: 12px;
+  padding: 8px 0 16px;
+  overflow: hidden;
+}
+
+.leaderboardItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  min-width: 72px;
+}
+
+.avatarCircle {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+}
+
+/* Toggle cards */
+.toggleRow {
+  display: flex;
+  justify-content: center;
+  gap: 0;
+  padding: 8px 0 20px;
+  position: relative;
+  height: 80px;
+}
+
+.toggleCard {
+  width: 150px;
+  height: 72px;
+  border-radius: 12px;
+  opacity: 0.4;
+}
+
+.toggleCardActive {
+  width: 160px;
+  height: 80px;
+  border-radius: 12px;
+  position: absolute;
+  right: calc(50% - 80px);
+}
+
+/* Calendar */
+.calendarRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 0;
+}
+
+.calNavBtn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.calDay {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.calDayCircle {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+}
+
+/* Session cards */
+.sessionRow {
+  display: flex;
+  gap: 16px;
+  padding: 12px 0;
+  overflow: hidden;
+}
+
+.sessionCard {
+  width: 280px;
+  height: 160px;
+  border-radius: 12px;
+  flex-shrink: 0;
+}
+
+/* Slot card (schedule page) */
+.slotCard {
+  width: 100%;
+  height: 80px;
+  border-radius: 12px;
+  margin-top: 12px;
+}
+
+/* List items (dashboard) */
+.listItem {
+  width: 100%;
+  height: 72px;
+  border-radius: 12px;
+  margin-top: 8px;
+}
+
+/* Text elements */
+.textLarge {
+  width: 200px;
+  height: 28px;
+}
+
+.textMedium {
+  width: 160px;
+  height: 20px;
+}
+
+.textSmall {
+  width: 80px;
+  height: 14px;
+}
+
+.textTiny {
+  width: 48px;
+  height: 10px;
+}
+
+/* Layout helpers */
+.headerRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 8px 0 24px;
+}
+
+.sectionTitle {
+  padding: 16px 0 8px;
+}
+
+.centerRow {
+  display: flex;
+  justify-content: center;
+  padding: 12px 0;
+}

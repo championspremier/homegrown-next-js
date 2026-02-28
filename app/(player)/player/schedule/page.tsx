@@ -77,18 +77,39 @@ export default async function PlayerSchedulePage() {
 
   let coachNames: Record<string, string> = {};
   const coachFullNames: Record<string, string> = {};
+  const coachProfileDetails: Record<string, { coachRole: string; profilePhotoUrl: string | null; teamLogos: string[] }> = {};
   if (uniqueCoachIds.length > 0) {
     const { data: coachProfiles } = await supabase
       .from("profiles")
-      .select("id, full_name, first_name")
+      .select("id, full_name, first_name, coach_role, team_logos, profile_photo_url")
       .in("id", uniqueCoachIds);
 
     if (coachProfiles) {
-      coachProfiles.forEach((p: { id: string; full_name: string | null; first_name: string | null }) => {
-        const firstName = p.first_name?.trim() || p.full_name?.split(" ")[0]?.trim() || "Coach";
-        coachNames[p.id] = `Coach ${firstName}`;
-        coachFullNames[p.id] = p.full_name?.trim() || p.first_name?.trim() || "Coach";
-      });
+      for (const p of coachProfiles as Record<string, unknown>[]) {
+        const id = p.id as string;
+        const firstName = (p.first_name as string)?.trim() || (p.full_name as string)?.split(" ")[0]?.trim() || "Coach";
+        coachNames[id] = `Coach ${firstName}`;
+        coachFullNames[id] = (p.full_name as string)?.trim() || (p.first_name as string)?.trim() || "Coach";
+
+        let photoUrl: string | null = (p.profile_photo_url as string) || null;
+        if (!photoUrl) {
+          const { data: photoFiles } = await supabase.storage
+            .from("profile-photos")
+            .list(id, { limit: 1, search: "avatar" });
+          if (photoFiles && photoFiles.length > 0) {
+            const { data: photoData } = supabase.storage
+              .from("profile-photos")
+              .getPublicUrl(`${id}/${photoFiles[0].name}`);
+            photoUrl = photoData?.publicUrl || null;
+          }
+        }
+
+        coachProfileDetails[id] = {
+          coachRole: (p.coach_role as string) || "Coach",
+          profilePhotoUrl: photoUrl,
+          teamLogos: (p.team_logos as string[]) || [],
+        };
+      }
     }
   }
 
@@ -126,6 +147,26 @@ export default async function PlayerSchedulePage() {
   const onFieldIndividualSessionTypes = allIndividual.filter((t) => t.location_type === "on-field");
   const virtualIndividualSessionTypes = allIndividual.filter((t) => t.location_type === "virtual");
 
+  let onFieldProgramLogoUrl: string | null = null;
+  const { data: onFieldProgramSession } = await supabase
+    .from("sessions")
+    .select("program_id")
+    .eq("location_type", "on-field")
+    .eq("status", "scheduled")
+    .not("program_id", "is", null)
+    .limit(1)
+    .maybeSingle();
+
+  const programId = (onFieldProgramSession as Record<string, unknown> | null)?.program_id as string | null;
+  if (programId) {
+    const { data: programData } = await supabase
+      .from("programs")
+      .select("logo_url")
+      .eq("id", programId)
+      .single();
+    onFieldProgramLogoUrl = ((programData ?? null) as Record<string, unknown> | null)?.logo_url as string | null;
+  }
+
   return (
     <div className={styles.scheduleContainer}>
       <h1 className={styles.pageTitle}>Schedule</h1>
@@ -139,6 +180,8 @@ export default async function PlayerSchedulePage() {
         coachNames={coachNames}
         coachFullNames={coachFullNames}
         sessionTypeColors={sessionTypeColors}
+        coachProfileDetails={coachProfileDetails}
+        onFieldProgramLogoUrl={onFieldProgramLogoUrl}
       />
     </div>
   );

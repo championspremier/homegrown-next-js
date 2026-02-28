@@ -89,11 +89,24 @@ export default async function AdminSchedulePage() {
   const { data: sessionsData } = await supabase
     .from("sessions")
     .select(
-      "id, coach_id, assistant_coach_ids, gk_coach_id, title, session_type, session_date, session_time, duration_minutes, attendance_limit, current_reservations, location_type, location, zoom_link, description, session_plan, status, program_id, recurring_group_id"
+      "id, coach_id, assistant_coach_ids, gk_coach_id, title, session_type, session_date, session_time, duration_minutes, attendance_limit, location_type, location, zoom_link, description, session_plan, status, program_id, recurring_group_id"
     )
     .in("status", ["scheduled", "in-progress"])
     .order("session_date", { ascending: true })
     .order("session_time", { ascending: true });
+
+  const calendarSessionIds = (sessionsData ?? []).map((s: Record<string, unknown>) => s.id as string);
+  const calendarCountMap: Record<string, number> = {};
+  if (calendarSessionIds.length > 0) {
+    const { data: countData } = await supabase
+      .from("session_reservations")
+      .select("session_id")
+      .in("session_id", calendarSessionIds)
+      .eq("reservation_status", "reserved");
+    (countData ?? []).forEach((r: { session_id: string }) => {
+      calendarCountMap[r.session_id] = (calendarCountMap[r.session_id] || 0) + 1;
+    });
+  }
 
   const { data: coachesData } = await supabase
     .from("profiles")
@@ -118,7 +131,7 @@ export default async function AdminSchedulePage() {
     session_time: (s.session_time as string) ?? "",
     duration_minutes: (s.duration_minutes as number) ?? 60,
     attendance_limit: (s.attendance_limit as number) ?? 0,
-    current_reservations: (s.current_reservations as number) ?? 0,
+    current_reservations: calendarCountMap[s.id as string] ?? 0,
     location_type: (s.location_type as string) ?? "on-field",
     location: (s.location as string) ?? null,
     zoom_link: (s.zoom_link as string) ?? null,

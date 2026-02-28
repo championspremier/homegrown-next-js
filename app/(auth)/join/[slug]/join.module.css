@@ -1,0 +1,378 @@
+.page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg, #f9fafb);
+  padding: 24px 16px;
+}
+
+.card {
+  width: 100%;
+  max-width: 480px;
+  background: var(--surface, #fff);
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 16px;
+  padding: 40px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* Branding */
+.branding {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  text-align: center;
+}
+
+.programLogo {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--border, #e5e7eb);
+}
+
+.programNameBadge {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: var(--accent-solid, #3b82f6);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  font-weight: 700;
+}
+
+.heading {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--foreground, #111);
+  margin: 0;
+}
+
+.subtitle {
+  font-size: 0.9rem;
+  color: var(--muted, #6b7280);
+  margin: 0;
+}
+
+/* Tabs */
+.tabs {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+
+.tab {
+  padding: 8px 16px;
+  border-radius: 20px;
+  border: 1px solid var(--border, #e5e7eb);
+  background: var(--background, #fff);
+  color: var(--foreground, #111);
+  font-size: 0.82rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-family: inherit;
+  white-space: nowrap;
+}
+
+.tab:hover {
+  border-color: var(--accent-solid, #3b82f6);
+  color: var(--accent-solid, #3b82f6);
+}
+
+.tabActive {
+  background: var(--accent-solid, #3b82f6);
+  border-color: var(--accent-solid, #3b82f6);
+  color: white;
+}
+
+.tabActive:hover {
+  color: white;
+}
+
+/* Error */
+.error {
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  border-radius: 10px;
+  padding: 12px 16px;
+  font-size: 0.85rem;
+  color: #ef4444;
+}
+
+.error p {
+  margin: 0;
+}
+
+.errorLink {
+  display: inline-block;
+  margin-top: 6px;
+  font-weight: 600;
+  color: var(--accent-solid, #3b82f6);
+  text-decoration: none;
+}
+
+.errorLink:hover {
+  text-decoration: underline;
+}
+
+/* Form */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.stepTitle {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--foreground, #111);
+  margin: 0 0 4px;
+  text-align: center;
+}
+
+.inputRow {
+  display: flex;
+  gap: 10px;
+}
+
+.inputRow .inputField {
+  flex: 1;
+  min-width: 0;
+}
+
+.inputField {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 14px;
+  height: 48px;
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 10px;
+  background: var(--background, #fff);
+  transition: border-color 0.2s ease;
+}
+
+.inputField:focus-within {
+  border-color: var(--accent-solid, #3b82f6);
+}
+
+.inputField svg {
+  color: var(--muted, #9ca3af);
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+}
+
+.inputField input {
+  flex: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--foreground, #111);
+  font-size: 0.9rem;
+  font-family: inherit;
+  min-width: 0;
+}
+
+.inputField input::placeholder {
+  color: var(--muted, #9ca3af);
+}
+
+.inputField input[type="date"] {
+  color: var(--foreground, #111);
+}
+
+.inputField input[type="date"]:invalid,
+.inputField input[type="date"][value=""] {
+  color: var(--muted, #9ca3af);
+}
+
+/* Date label */
+.dateLabel {
+  font-size: 0.8rem;
+  color: var(--muted, #9ca3af);
+  margin-bottom: 4px;
+  margin-top: 4px;
+}
+
+/* Submit button */
+.submitBtn {
+  width: 100%;
+  height: 48px;
+  border: none;
+  border-radius: 10px;
+  background: var(--accent-solid, #3b82f6);
+  color: white;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+  font-family: inherit;
+  margin-top: 4px;
+}
+
+.submitBtn:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.submitBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Step buttons */
+.stepButtons {
+  display: flex;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.backBtn {
+  flex: 1;
+  height: 48px;
+  border: 2px solid var(--border, #e5e7eb);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--foreground, #111);
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-family: inherit;
+}
+
+.backBtn:hover {
+  border-color: var(--accent-solid, #3b82f6);
+  color: var(--accent-solid, #3b82f6);
+}
+
+.stepButtons .submitBtn {
+  flex: 2;
+  margin-top: 0;
+}
+
+/* Progress indicator */
+.progress {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  margin-bottom: 8px;
+}
+
+.progressStep {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.progressDot {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border: 2px solid var(--border, #ddd);
+  color: var(--muted, #aaa);
+  background: var(--background, white);
+  transition: all 0.3s ease;
+}
+
+.progressDotActive {
+  border-color: var(--accent-solid, #3b82f6);
+  background: var(--accent-solid, #3b82f6);
+  color: white;
+}
+
+.progressLabel {
+  font-size: 0.7rem;
+  color: var(--muted, #9ca3af);
+  font-weight: 500;
+}
+
+.progressLine {
+  width: 48px;
+  height: 3px;
+  background: var(--border, #ddd);
+  margin: 0 8px;
+  margin-bottom: 20px;
+  border-radius: 2px;
+  transition: background 0.3s ease;
+}
+
+.progressLineActive {
+  background: var(--accent-solid, #3b82f6);
+}
+
+/* Footer */
+.footer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border, #e5e7eb);
+}
+
+.loginLink {
+  font-size: 0.85rem;
+  color: var(--muted, #6b7280);
+  margin: 0;
+}
+
+.loginLink a {
+  color: var(--accent-solid, #3b82f6);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.loginLink a:hover {
+  text-decoration: underline;
+}
+
+.poweredBy {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  color: var(--muted, #9ca3af);
+}
+
+.hgLogo {
+  height: 18px;
+  width: auto;
+  opacity: 0.6;
+}
+
+/* Responsive */
+@media (max-width: 540px) {
+  .card {
+    padding: 28px 20px;
+    border-radius: 12px;
+  }
+
+  .inputRow {
+    flex-direction: column;
+  }
+
+  .tabs {
+    flex-wrap: wrap;
+  }
+
+  .heading {
+    font-size: 1.25rem;
+  }
+}

@@ -41,6 +41,7 @@ function getIconForHref(href: string) {
 interface SidebarProps {
   navItems: NavItem[];
   roleHome: string;
+  profilePhotoUrl?: string | null;
   open: boolean;
   onClose: () => void;
 }
@@ -53,7 +54,7 @@ function isActive(pathname: string, href: string): boolean {
   return pathname.startsWith(href);
 }
 
-export function Sidebar({ navItems, roleHome, open, onClose }: SidebarProps) {
+export function Sidebar({ navItems, roleHome, profilePhotoUrl, open, onClose }: SidebarProps) {
   const pathname = usePathname() ?? "";
   const [isCollapsed, setIsCollapsed] = useState(false);
 
@@ -102,6 +103,7 @@ export function Sidebar({ navItems, roleHome, open, onClose }: SidebarProps) {
         <nav className={styles.sidebarNav}>
           {navItems.map((item) => {
             const Icon = getIconForHref(item.href);
+            const isProfileItem = item.href.endsWith("/profile");
             return (
               <Link
                 key={item.href}
@@ -111,7 +113,26 @@ export function Sidebar({ navItems, roleHome, open, onClose }: SidebarProps) {
                 onClick={onClose}
                 aria-current={isActive(pathname, item.href) ? "page" : undefined}
               >
-                <Icon size={20} />
+                {isProfileItem && profilePhotoUrl ? (
+                  <span className={styles.navProfilePhoto}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={profilePhotoUrl}
+                      alt=""
+                      className={styles.navProfileImg}
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).style.display = "none";
+                        const fallback = (e.target as HTMLImageElement).nextElementSibling as HTMLElement;
+                        if (fallback) fallback.style.display = "flex";
+                      }}
+                    />
+                    <span className={styles.navProfileFallback} style={{ display: "none" }}>
+                      <User size={20} />
+                    </span>
+                  </span>
+                ) : (
+                  <Icon size={20} />
+                )}
                 {!isCollapsed && <span className={styles.sidebarLabel}>{item.label}</span>}
               </Link>
             );

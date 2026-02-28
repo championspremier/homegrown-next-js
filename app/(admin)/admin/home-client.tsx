@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useToast } from "@/components/ui/Toast";
+import { UserRoundPen, CalendarClock, CalendarDays, Trash2, Pencil, X, Camera, CheckCircle2, XCircle } from "lucide-react";
 import styles from "./home.module.css";
 
 interface Coach {
@@ -23,7 +24,6 @@ interface GroupSession {
   assistant_coach_ids: string[];
   gk_coach_id: string | null;
   attendance_limit: number;
-  current_reservations: number;
   location: string | null;
   zoom_link: string | null;
   description: string | null;
@@ -78,6 +78,24 @@ interface PlayerInfo {
   positions?: string[] | null;
 }
 
+interface SoloBooking {
+  id: string;
+  player_id: string;
+  solo_session_id: string;
+  scheduled_date: string;
+  scheduled_time: string | null;
+  completion_photo_url: string | null;
+  status: string;
+  checked_in_at: string | null;
+  checked_in_by: string | null;
+  solo_sessions: {
+    id: string;
+    title: string;
+    skill: string;
+    category: string;
+  } | null;
+}
+
 interface Props {
   profileId: string;
   profileName: string;
@@ -89,6 +107,7 @@ interface Props {
   coaches: Record<string, Coach>;
   playerLookup: Record<string, PlayerInfo>;
   sessionTypeColors: Record<string, string>;
+  soloBookings: SoloBooking[];
 }
 
 type TabFilter = "all" | "my-day" | "past";
@@ -106,7 +125,7 @@ interface UnifiedPlayer {
 
 interface UnifiedSession {
   id: string;
-  type: "group" | "individual";
+  type: "group" | "individual" | "solo";
   name: string;
   time: string;
   date?: string;
@@ -124,6 +143,10 @@ interface UnifiedSession {
   color: string;
   players: UnifiedPlayer[];
   raw?: Record<string, unknown>;
+  soloPhotoUrl?: string | null;
+  soloStatus?: string;
+  soloCategory?: string;
+  soloSkill?: string;
 }
 
 function formatTime12(time24: string): string {
@@ -157,12 +180,14 @@ export default function HomeClient({
   coaches,
   playerLookup,
   sessionTypeColors,
+  soloBookings,
 }: Props) {
   const { showToast } = useToast();
   const [activeTab, setActiveTab] = useState<TabFilter>("all");
   const [refreshKey, setRefreshKey] = useState(0);
   const [selectedSession, setSelectedSession] = useState<UnifiedSession | null>(null);
   const [checkingIn, setCheckingIn] = useState<string | null>(null);
+  const [visibleCount, setVisibleCount] = useState(3);
 
   const [editMenuOpen, setEditMenuOpen] = useState(false);
   const [changeStaffOpen, setChangeStaffOpen] = useState(false);
@@ -250,9 +275,53 @@ export default function HomeClient({
       });
     });
 
+    soloBookings.forEach((booking) => {
+      const player = playerLookup[booking.player_id];
+      const soloSession = booking.solo_sessions;
+      const skillLabel = soloSession
+        ? `${soloSession.category?.charAt(0).toUpperCase()}${soloSession.category?.slice(1)} · ${soloSession.skill}`
+        : "Solo Session";
+
+      unified.push({
+        id: booking.id,
+        type: "solo",
+        name: soloSession?.title || "Solo Session",
+        time: booking.scheduled_time || "00:00",
+        endTime: addMinutesToTime(booking.scheduled_time || "00:00", 30),
+        duration: 30,
+        coachId: "",
+        coachName: "",
+        coachInitials: "",
+        assistantCoachIds: [],
+        gkCoachId: null,
+        locationType: "field",
+        location: null,
+        zoomLink: null,
+        attendanceLimit: 1,
+        color: "#f59e0b",
+        players: player
+          ? [{
+              id: player.id,
+              firstName: player.first_name || "",
+              lastName: player.last_name || "",
+              initials: getInitials(player.first_name, player.last_name),
+              reservationId: booking.id,
+              status: booking.status,
+              checkedInAt: booking.checked_in_at,
+              positions: player.positions || [],
+            }]
+          : [],
+        raw: booking as unknown as Record<string, unknown>,
+        soloPhotoUrl: booking.completion_photo_url,
+        soloStatus: booking.status,
+        soloCategory: soloSession?.category || "",
+        soloSkill: skillLabel,
+      });
+    });
+
     unified.sort((a, b) => (a.time || "").localeCompare(b.time || ""));
     return unified;
-  }, [groupSessions, individualBookings, reservations, coaches, playerLookup, sessionTypeColors]);
+  }, [groupSessions, individualBookings, reservations, coaches, playerLookup, sessionTypeColors, soloBookings]);
 
   const filteredSessions = useMemo(() => {
     if (activeTab === "past") return pastSessions;
@@ -384,6 +453,20 @@ export default function HomeClient({
           .eq("id", player.reservationId);
         if (error) throw error;
       }
+
+      try {
+        // @ts-expect-error - RPC args type not inferred
+        await supabase.rpc("award_points_for_checkin", {
+          p_player_id: player.id,
+          p_session_type: session.name,
+          p_reservation_id: player.reservationId,
+          p_is_individual: session.type === "individual",
+          p_awarded_by: profileId,
+        });
+      } catch (err) {
+        console.error("Failed to award points:", err);
+      }
+
       showToast(`${player.firstName} checked in!`, "success");
       player.status = "checked-in";
       player.checkedInAt = new Date().toISOString();
@@ -412,6 +495,17 @@ export default function HomeClient({
           .eq("id", player.reservationId);
         if (error) throw error;
       }
+
+      try {
+        // @ts-expect-error - RPC args type not inferred
+        await supabase.rpc("remove_points_for_checkin", {
+          p_player_id: player.id,
+          p_reservation_id: player.reservationId,
+        });
+      } catch (err) {
+        console.error("Failed to remove points:", err);
+      }
+
       showToast(`Check-in removed for ${player.firstName}`, "info");
       player.status = "reserved";
       player.checkedInAt = null;
@@ -442,6 +536,20 @@ export default function HomeClient({
             .update({ checked_in_at: new Date().toISOString() })
             .eq("id", player.reservationId);
         }
+
+        try {
+          // @ts-expect-error - RPC args type not inferred
+          await supabase.rpc("award_points_for_checkin", {
+            p_player_id: player.id,
+            p_session_type: session.name,
+            p_reservation_id: player.reservationId,
+            p_is_individual: session.type === "individual",
+            p_awarded_by: profileId,
+          });
+        } catch (err) {
+          console.error("Failed to award points:", err);
+        }
+
         player.status = "checked-in";
         player.checkedInAt = new Date().toISOString();
         success++;
@@ -548,6 +656,102 @@ export default function HomeClient({
     setRefreshKey((k) => k + 1);
   }
 
+  const pendingReviewCount = useMemo(
+    () => soloBookings.filter((b) => b.status === "pending_review").length,
+    [soloBookings]
+  );
+
+  async function deleteSoloPhoto(photoUrl: string | null | undefined, bookingId: string) {
+    if (!photoUrl) return;
+    try {
+      const url = new URL(photoUrl);
+      const pathParts = url.pathname.split("/solo-session-photos/");
+      if (pathParts.length > 1) {
+        const storagePath = pathParts[1];
+        const supabase = createClient();
+        const { error } = await supabase.storage.from("solo-session-photos").remove([storagePath]);
+        if (error) console.warn("Photo cleanup failed:", error.message);
+        else console.log("Solo photo deleted from storage:", storagePath);
+      }
+    } catch (e) {
+      console.warn("Photo cleanup error:", e);
+    }
+    if (bookingId) {
+      const supabase = createClient();
+      await (supabase as any).from("player_solo_session_bookings").update({ completion_photo_url: null }).eq("id", bookingId);
+    }
+  }
+
+  async function handleSoloCheckIn(session: UnifiedSession) {
+    if (!session.players[0]) return;
+    const player = session.players[0];
+    setCheckingIn(player.reservationId);
+    const supabase = createClient();
+    try {
+      const { error } = await (supabase as any)
+        .from("player_solo_session_bookings")
+        .update({ status: "checked-in", checked_in_at: new Date().toISOString(), checked_in_by: profileId })
+        .eq("id", session.id);
+      if (error) throw error;
+
+      try {
+        await (supabase as any).from("points_transactions").insert({
+          player_id: player.id,
+          points: 8,
+          session_type: "Solo Session",
+          session_id: (session.raw as Record<string, unknown>)?.solo_session_id as string || null,
+          quarter_year: new Date().getFullYear(),
+          quarter_number: Math.ceil((new Date().getMonth() + 1) / 3),
+          status: "active",
+          checked_in_at: new Date().toISOString(),
+        });
+      } catch (err) {
+        console.error("Failed to award solo points:", err);
+      }
+
+      deleteSoloPhoto(session.soloPhotoUrl, session.id);
+
+      showToast(`${player.firstName} solo session checked in! +8 points`, "success");
+      session.soloStatus = "checked-in";
+      player.status = "checked-in";
+      player.checkedInAt = new Date().toISOString();
+      setRefreshKey((k) => k + 1);
+    } catch (err: unknown) {
+      showToast(err instanceof Error ? err.message : "Check-in failed", "error");
+    } finally {
+      setCheckingIn(null);
+    }
+  }
+
+  async function handleSoloDeny(session: UnifiedSession) {
+    if (!session.players[0]) return;
+    const player = session.players[0];
+    setCheckingIn(player.reservationId);
+    const supabase = createClient();
+    try {
+      const { error } = await (supabase as any)
+        .from("player_solo_session_bookings")
+        .update({ status: "denied" })
+        .eq("id", session.id);
+      if (error) throw error;
+
+      deleteSoloPhoto(session.soloPhotoUrl, session.id);
+
+      showToast(`Photo denied for ${player.firstName}. They can re-upload.`, "info");
+      session.soloStatus = "denied";
+      player.status = "denied";
+      session.soloPhotoUrl = null;
+      setRefreshKey((k) => k + 1);
+    } catch (err: unknown) {
+      showToast(err instanceof Error ? err.message : "Deny failed", "error");
+    } finally {
+      setCheckingIn(null);
+    }
+  }
+
+  const visibleSessions = filteredSessions.slice(0, visibleCount);
+  const hasMore = filteredSessions.length > visibleCount;
+
   const today = new Date();
   const dateDisplay = today.toLocaleDateString("en-US", {
     weekday: "long", month: "long", day: "numeric", year: "numeric",
@@ -573,6 +777,7 @@ export default function HomeClient({
                 key={tab}
                 className={`${styles.tab} ${activeTab === tab ? styles.tabActive : ""}`}
                 onClick={() => {
+                  setVisibleCount(3);
                   setActiveTab(tab);
                   if (tab === "past" && !pastLoaded) loadPastSessions();
                 }}
@@ -587,20 +792,27 @@ export default function HomeClient({
             ? "Check in players after sessions for their points."
             : "Check in your players after sessions."}
         </p>
+        {pendingReviewCount > 0 && (
+          <div className={styles.pendingBanner}>
+            <Camera size={14} />
+            <span>{pendingReviewCount} solo photo{pendingReviewCount !== 1 ? "s" : ""} pending review</span>
+          </div>
+        )}
 
         {activeTab === "past" && loadingPast ? (
           <div className={styles.emptyState}><p>Loading past sessions...</p></div>
         ) : filteredSessions.length === 0 ? (
           <div className={styles.emptyState}>
-            <span className={styles.emptyIcon}>📅</span>
+            <CalendarDays size={32} className={styles.emptyIcon} />
             <p>{activeTab === "past" ? "No past sessions found" : "No sessions scheduled for today"}</p>
           </div>
         ) : (
           <div className={styles.sessionsList}>
-            {filteredSessions.map((session, i) => {
+            {visibleSessions.map((session, i) => {
               const reservedCount = session.players.filter((p) => p.status === "reserved").length;
               const checkedInCount = session.players.filter((p) => p.status === "checked-in").length;
               const isIndividual = session.type === "individual";
+              const isSolo = session.type === "solo";
 
               return (
                 <div key={session.id}>
@@ -621,16 +833,32 @@ export default function HomeClient({
                         <span className={styles.sessionItemName}>
                           {session.name}
                           {isIndividual && <span className={styles.sessionTypeBadge}> 1-on-1</span>}
+                          {isSolo && <span className={styles.soloTypeBadge}> Solo</span>}
                         </span>
                         <span className={styles.sessionItemTime}>
-                          {formatTime12(session.time)} – {formatTime12(session.endTime)}
+                          {isSolo && session.soloSkill ? `${session.soloSkill} · ` : ""}
+                          {formatTime12(session.time)}{!isSolo && ` – ${formatTime12(session.endTime)}`}
                         </span>
                         {isIndividual && session.players[0] && (
                           <span className={styles.sessionItemPlayer}>
                             {session.players[0].firstName} {session.players[0].lastName}
                           </span>
                         )}
-                        {!isIndividual && (
+                        {isSolo && session.players[0] && (
+                          <span className={styles.sessionItemPlayer}>
+                            {session.players[0].firstName} {session.players[0].lastName}
+                          </span>
+                        )}
+                        {isSolo && session.soloStatus === "pending_review" && (
+                          <span className={styles.soloPhotoBadge}>📷 Photo Ready for Review</span>
+                        )}
+                        {isSolo && session.soloStatus === "checked-in" && (
+                          <span className={styles.soloCheckedInBadge}>✓ Checked In</span>
+                        )}
+                        {isSolo && session.soloStatus === "denied" && (
+                          <span className={styles.soloDeniedBadge}>✗ Denied</span>
+                        )}
+                        {!isIndividual && !isSolo && (
                           <span className={styles.sessionItemAttendees}>
                             {checkedInCount + reservedCount} / {session.attendanceLimit || "∞"} attendees
                             {checkedInCount > 0 && ` · ${checkedInCount} checked in`}
@@ -638,10 +866,12 @@ export default function HomeClient({
                         )}
                       </div>
                       <div className={styles.sessionItemRight}>
-                        <div className={styles.sessionCoachBubble} title={session.coachName}>
-                          {session.coachInitials}
-                        </div>
-                        {isIndividual && session.players[0] && (
+                        {!isSolo && (
+                          <div className={styles.sessionCoachBubble} title={session.coachName}>
+                            {session.coachInitials}
+                          </div>
+                        )}
+                        {(isIndividual || isSolo) && session.players[0] && (
                           <div className={styles.sessionPlayerBubble} title={`${session.players[0].firstName} ${session.players[0].lastName}`}>
                             {session.players[0].initials}
                           </div>
@@ -654,6 +884,14 @@ export default function HomeClient({
             })}
           </div>
         )}
+        {hasMore && (
+          <button
+            className={styles.loadMoreBtn}
+            onClick={() => setVisibleCount((c) => c + 5)}
+          >
+            Load more ({filteredSessions.length - visibleCount} remaining)
+          </button>
+        )}
       </div>
 
       {/* Session Detail Modal */}
@@ -664,120 +902,206 @@ export default function HomeClient({
               <div>
                 <h2 className={styles.modalTitle}>{selectedSession.name}</h2>
                 <span className={styles.modalBadge}>
-                  {selectedSession.type === "individual" ? "1-ON-1 SESSION" : "GROUP SESSION"}
+                  {selectedSession.type === "solo"
+                    ? "SOLO SESSION"
+                    : selectedSession.type === "individual"
+                    ? "1-ON-1 SESSION"
+                    : "GROUP SESSION"}
                 </span>
               </div>
               <div className={styles.modalHeaderActions}>
                 {selectedSession.type === "individual" && (
-                  <button className={styles.modalEditBtn} onClick={() => setEditMenuOpen(!editMenuOpen)}>✎</button>
+                  <button className={styles.modalEditBtn} onClick={() => setEditMenuOpen(!editMenuOpen)}><Pencil size={16} /></button>
                 )}
-                <button className={styles.modalCloseBtn} onClick={() => { setSelectedSession(null); setEditMenuOpen(false); }}>✕</button>
+                <button className={styles.modalCloseBtn} onClick={() => { setSelectedSession(null); setEditMenuOpen(false); }}><X size={18} /></button>
               </div>
             </div>
 
             <div className={styles.modalMeta}>
+              {selectedSession.type === "solo" && selectedSession.soloSkill && (
+                <div className={styles.modalMetaRow}>
+                  <span className={styles.modalMetaLabel}>Skill</span>
+                  <span className={styles.modalMetaValue}>{selectedSession.soloSkill}</span>
+                </div>
+              )}
               <div className={styles.modalMetaRow}>
                 <span className={styles.modalMetaLabel}>Time</span>
                 <span className={styles.modalMetaValue}>
-                  {formatTime12(selectedSession.time)} – {formatTime12(selectedSession.endTime)}
+                  {formatTime12(selectedSession.time)}{selectedSession.type !== "solo" && ` – ${formatTime12(selectedSession.endTime)}`}
                 </span>
               </div>
-              <div className={styles.modalMetaRow}>
-                <span className={styles.modalMetaLabel}>Location</span>
-                <span className={styles.modalMetaValue}>
-                  {selectedSession.locationType === "virtual" ? "Virtual" : selectedSession.location || "On-Field"}
-                </span>
-              </div>
-            </div>
-
-            <div className={styles.modalStaff}>
-              <div className={styles.staffMember}>
-                <div className={styles.staffAvatar}>{selectedSession.coachInitials}</div>
-                <div className={styles.staffInfo}>
-                  <span className={styles.staffName}>{selectedSession.coachName}</span>
-                  <span className={styles.staffRole}>Head Coach</span>
+              {selectedSession.type !== "solo" && (
+                <div className={styles.modalMetaRow}>
+                  <span className={styles.modalMetaLabel}>Location</span>
+                  <span className={styles.modalMetaValue}>
+                    {selectedSession.locationType === "virtual" ? "Virtual" : selectedSession.location || "On-Field"}
+                  </span>
                 </div>
-              </div>
-              {selectedSession.assistantCoachIds?.map((id) => {
-                const c = coaches[id];
-                if (!c) return null;
-                return (
-                  <div key={id} className={styles.staffMember}>
-                    <div className={styles.staffAvatarAssistant}>{getInitials(c.firstName, c.lastName)}</div>
-                    <div className={styles.staffInfo}>
-                      <span className={styles.staffName}>Coach {c.firstName}</span>
-                      <span className={styles.staffRole}>Assistant</span>
-                    </div>
-                  </div>
-                );
-              })}
-              {selectedSession.gkCoachId && coaches[selectedSession.gkCoachId] && (
-                <div className={styles.staffMember}>
-                  <div className={styles.staffAvatarGk}>
-                    {getInitials(coaches[selectedSession.gkCoachId].firstName, coaches[selectedSession.gkCoachId].lastName)}
-                  </div>
-                  <div className={styles.staffInfo}>
-                    <span className={styles.staffName}>Coach {coaches[selectedSession.gkCoachId].firstName}</span>
-                    <span className={styles.staffRole}>GK Coach</span>
-                  </div>
+              )}
+              {selectedSession.type === "solo" && (
+                <div className={styles.modalMetaRow}>
+                  <span className={styles.modalMetaLabel}>Status</span>
+                  <span className={styles.modalMetaValue}>
+                    <span className={styles.soloStatusBadge} data-status={selectedSession.soloStatus}>
+                      {selectedSession.soloStatus === "scheduled" && "Scheduled"}
+                      {selectedSession.soloStatus === "pending_review" && "📷 Photo Pending Review"}
+                      {selectedSession.soloStatus === "checked-in" && "✓ Checked In"}
+                      {selectedSession.soloStatus === "denied" && "✗ Denied"}
+                    </span>
+                  </span>
                 </div>
               )}
             </div>
 
-            <div className={styles.modalPlayers}>
-              <div className={styles.modalPlayersHeader}>
-                <h4 className={styles.playersSectionTitle}>Players ({selectedSession.players.length})</h4>
-                {selectedSession.type === "group" && selectedSession.players.some((p) => p.status === "reserved") && (
-                  <button
-                    className={styles.checkInAllBtn}
-                    onClick={() => handleCheckInAll(selectedSession)}
-                    disabled={checkingIn === "all"}
-                  >
-                    {checkingIn === "all" ? "Checking in..." : "Check in All"}
-                  </button>
-                )}
-              </div>
-              <div className={styles.modalPlayersList}>
-                {selectedSession.players.length === 0 ? (
-                  <p className={styles.noPlayers}>No players reserved</p>
-                ) : (
-                  selectedSession.players.map((player) => {
-                    const isCheckedIn = player.status === "checked-in";
-                    const isLoading = checkingIn === player.reservationId;
-                    return (
-                      <div key={player.reservationId} className={styles.playerRow}>
-                        <div className={styles.playerAvatar}>{player.initials}</div>
-                        <div className={styles.playerInfo}>
-                          <span className={styles.playerName}>{player.firstName} {player.lastName}</span>
-                          {player.positions.length > 0 && (
-                            <span className={styles.playerPositions}>{player.positions.join(", ")}</span>
-                          )}
-                        </div>
-                        <button
-                          className={`${styles.checkInBtn} ${isCheckedIn ? styles.checkInBtnDone : ""}`}
-                          onClick={() => isCheckedIn ? handleRemoveCheckIn(selectedSession, player) : handleCheckIn(selectedSession, player)}
-                          disabled={isLoading}
-                        >
-                          {isLoading ? "..." : isCheckedIn ? "Undo" : "Check-in"}
-                        </button>
+            {selectedSession.type !== "solo" && (
+              <div className={styles.modalStaff}>
+                <div className={styles.staffMember}>
+                  <div className={styles.staffAvatar}>{selectedSession.coachInitials}</div>
+                  <div className={styles.staffInfo}>
+                    <span className={styles.staffName}>{selectedSession.coachName}</span>
+                    <span className={styles.staffRole}>Head Coach</span>
+                  </div>
+                </div>
+                {selectedSession.assistantCoachIds?.map((id) => {
+                  const c = coaches[id];
+                  if (!c) return null;
+                  return (
+                    <div key={id} className={styles.staffMember}>
+                      <div className={styles.staffAvatarAssistant}>{getInitials(c.firstName, c.lastName)}</div>
+                      <div className={styles.staffInfo}>
+                        <span className={styles.staffName}>Coach {c.firstName}</span>
+                        <span className={styles.staffRole}>Assistant</span>
                       </div>
-                    );
-                  })
+                    </div>
+                  );
+                })}
+                {selectedSession.gkCoachId && coaches[selectedSession.gkCoachId] && (
+                  <div className={styles.staffMember}>
+                    <div className={styles.staffAvatarGk}>
+                      {getInitials(coaches[selectedSession.gkCoachId].firstName, coaches[selectedSession.gkCoachId].lastName)}
+                    </div>
+                    <div className={styles.staffInfo}>
+                      <span className={styles.staffName}>Coach {coaches[selectedSession.gkCoachId].firstName}</span>
+                      <span className={styles.staffRole}>GK Coach</span>
+                    </div>
+                  </div>
                 )}
               </div>
-            </div>
+            )}
+
+            {selectedSession.type === "solo" && (
+              <div className={styles.soloSection}>
+                {selectedSession.players[0] && (
+                  <div className={styles.soloPlayer}>
+                    <div className={styles.playerAvatar}>{selectedSession.players[0].initials}</div>
+                    <div className={styles.playerInfo}>
+                      <span className={styles.playerName}>
+                        {selectedSession.players[0].firstName} {selectedSession.players[0].lastName}
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                {selectedSession.soloPhotoUrl && (
+                  <div className={styles.soloPhotoWrapper}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={selectedSession.soloPhotoUrl} alt="Completion photo" className={styles.soloPhoto} />
+                  </div>
+                )}
+
+                {selectedSession.soloStatus === "pending_review" && (
+                  <div className={styles.soloActions}>
+                    <button
+                      className={styles.soloCheckInBtn}
+                      onClick={() => handleSoloCheckIn(selectedSession)}
+                      disabled={checkingIn !== null}
+                    >
+                      <CheckCircle2 size={16} />
+                      {checkingIn ? "Processing..." : "Check In (+8 pts)"}
+                    </button>
+                    <button
+                      className={styles.soloDenyBtn}
+                      onClick={() => handleSoloDeny(selectedSession)}
+                      disabled={checkingIn !== null}
+                    >
+                      <XCircle size={16} />
+                      Deny Photo
+                    </button>
+                  </div>
+                )}
+
+                {selectedSession.soloStatus === "scheduled" && (
+                  <p className={styles.soloWaiting}>Waiting for player to upload completion photo.</p>
+                )}
+
+                {selectedSession.soloStatus === "checked-in" && (
+                  <p className={styles.soloCheckedIn}>
+                    <CheckCircle2 size={16} /> Player checked in and points awarded.
+                  </p>
+                )}
+
+                {selectedSession.soloStatus === "denied" && (
+                  <p className={styles.soloDeniedMsg}>Photo denied. Waiting for player to re-upload.</p>
+                )}
+              </div>
+            )}
+
+            {selectedSession.type !== "solo" && (
+              <div className={styles.modalPlayers}>
+                <div className={styles.modalPlayersHeader}>
+                  <h4 className={styles.playersSectionTitle}>Players ({selectedSession.players.length})</h4>
+                  {selectedSession.type === "group" && selectedSession.players.some((p) => p.status === "reserved") && (
+                    <button
+                      className={styles.checkInAllBtn}
+                      onClick={() => handleCheckInAll(selectedSession)}
+                      disabled={checkingIn === "all"}
+                    >
+                      {checkingIn === "all" ? "Checking in..." : "Check in All"}
+                    </button>
+                  )}
+                </div>
+                <div className={styles.modalPlayersList}>
+                  {selectedSession.players.length === 0 ? (
+                    <p className={styles.noPlayers}>No players reserved</p>
+                  ) : (
+                    selectedSession.players.map((player) => {
+                      const isCheckedIn = player.status === "checked-in";
+                      const isLoading = checkingIn === player.reservationId;
+                      return (
+                        <div key={player.reservationId} className={styles.playerRow}>
+                          <div className={styles.playerAvatar}>{player.initials}</div>
+                          <div className={styles.playerInfo}>
+                            <span className={styles.playerName}>{player.firstName} {player.lastName}</span>
+                            {player.positions.length > 0 && (
+                              <span className={styles.playerPositions}>{player.positions.join(", ")}</span>
+                            )}
+                          </div>
+                          <button
+                            className={`${styles.checkInBtn} ${isCheckedIn ? styles.checkInBtnDone : ""}`}
+                            onClick={() => isCheckedIn ? handleRemoveCheckIn(selectedSession, player) : handleCheckIn(selectedSession, player)}
+                            disabled={isLoading}
+                          >
+                            {isLoading ? "..." : isCheckedIn ? "Undo" : "Check-in"}
+                          </button>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+            )}
           </div>
 
           {editMenuOpen && selectedSession.type === "individual" && (
             <div className={styles.editMenu} onClick={(e) => e.stopPropagation()}>
               <button className={styles.editMenuItem} onClick={openChangeStaff}>
-                <span>👤</span> Change Staff
+                <UserRoundPen size={18} /> Change Staff
               </button>
               <button className={styles.editMenuItem} onClick={openReschedule}>
-                <span>📅</span> Reschedule
+                <CalendarClock size={18} /> Reschedule
               </button>
               <button className={`${styles.editMenuItem} ${styles.editMenuItemDanger}`} onClick={handleCancelIndividual}>
-                <span>🗑</span> Cancel Session
+                <Trash2 size={18} /> Cancel Session
               </button>
             </div>
           )}
@@ -789,7 +1113,7 @@ export default function HomeClient({
           <div className={styles.subModalContent} onClick={(e) => e.stopPropagation()}>
             <div className={styles.subModalHeader}>
               <h3>Change Staff</h3>
-              <button className={styles.modalCloseBtn} onClick={() => setChangeStaffOpen(false)}>✕</button>
+              <button className={styles.modalCloseBtn} onClick={() => setChangeStaffOpen(false)}><X size={18} /></button>
             </div>
             <div className={styles.subModalBody}>
               {availableCoaches.map((c) => (
@@ -815,7 +1139,7 @@ export default function HomeClient({
           <div className={styles.subModalContent} onClick={(e) => e.stopPropagation()}>
             <div className={styles.subModalHeader}>
               <h3>Reschedule</h3>
-              <button className={styles.modalCloseBtn} onClick={() => setRescheduleOpen(false)}>✕</button>
+              <button className={styles.modalCloseBtn} onClick={() => setRescheduleOpen(false)}><X size={18} /></button>
             </div>
             <div className={styles.subModalBody}>
               <label className={styles.formLabel}>When</label>

@@ -1,8 +1,9 @@
 /* 1. Layout */
 .scheduleContainer {
-  max-width: 900px;
+  max-width: 100%;
+  width: 92%;
   margin: 0 auto;
-  padding: 16px 20px;
+  padding: 0;
 }
 
 .pageTitle {
@@ -26,6 +27,40 @@
   cursor: pointer;
   user-select: none;
   border-bottom: 1px solid var(--border);
+  position: relative;
+}
+
+.sectionLogo {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 28px;
+  width: auto;
+  object-fit: contain;
+  opacity: 0.7;
+}
+
+.sectionLogoLight {
+  height: 28px;
+  width: auto;
+  object-fit: contain;
+  display: block;
+}
+
+.sectionLogoDark {
+  height: 28px;
+  width: auto;
+  object-fit: contain;
+  display: none;
+}
+
+:global(html[data-theme="dark"]) .sectionLogoLight {
+  display: none;
+}
+
+:global(html[data-theme="dark"]) .sectionLogoDark {
+  display: block;
 }
 
 .sectionTitle {
@@ -353,6 +388,23 @@
   background: var(--accent);
   flex-shrink: 0;
   overflow: hidden;
+  position: relative;
+}
+
+.slotCoachAvatarImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 1;
+}
+
+.slotCoachInitials {
+  position: relative;
+  z-index: 0;
 }
 
 .slotCoachAvatar img {
@@ -623,12 +675,18 @@
   color: var(--accent-foreground);
   background: var(--accent);
   overflow: hidden;
+  position: relative;
 }
 
-.coachAvatarCircle img {
+.coachAvatarCircleImg {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  border-radius: 50%;
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 1;
 }
 
 .coachAvatarInfo {
@@ -768,12 +826,28 @@
 }
 
 .coachGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  display: flex;
   gap: 12px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 8px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+}
+
+.coachGrid::-webkit-scrollbar {
+  height: 4px;
+}
+
+.coachGrid::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 2px;
 }
 
 .coachCard {
+  min-width: 130px;
+  max-width: 150px;
+  flex-shrink: 0;
   border: 2px solid var(--border);
   border-radius: 12px;
   padding: 16px 12px;
@@ -813,6 +887,24 @@
   color: var(--accent-foreground);
   font-size: 1.1rem;
   font-weight: 700;
+  position: relative;
+  overflow: hidden;
+}
+
+.coachAvatarImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 1;
+}
+
+.coachInitials {
+  position: relative;
+  z-index: 0;
 }
 
 .coachName {
@@ -825,6 +917,43 @@
   font-size: 0.8rem;
   color: var(--muted);
   margin-top: 2px;
+}
+
+.coachModalSubRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.coachRoleFilterSelect {
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface, var(--background));
+  color: var(--foreground);
+  font-size: 0.8rem;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.coachRoleFilterSelect:focus {
+  outline: none;
+  border-color: var(--accent-solid, #3b82f6);
+}
+
+.coachTeamLogos {
+  display: flex;
+  gap: 4px;
+  justify-content: center;
+  margin-top: 4px;
+}
+
+.coachTeamLogoImg {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+  border-radius: 4px;
 }
 
 .coachLogos {
@@ -977,7 +1106,7 @@
   }
 
   .coachGrid {
-    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
   }
 
   .detailModalContent,
@@ -1069,6 +1198,76 @@
   font-weight: 600;
   color: var(--accent-solid);
   white-space: nowrap;
+}
+
+/* Overlapping avatar stack for reserved players */
+.reservedAvatarStack {
+  display: flex;
+  align-items: center;
+  margin-left: 8px;
+}
+
+.reservedAvatar {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--accent-solid, #4f90ff);
+  color: #fff;
+  font-size: 0.55rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--background, #fff);
+  margin-left: -6px;
+  position: relative;
+}
+
+.reservedAvatar:first-child {
+  margin-left: 0;
+}
+
+.reservedAvatarLg {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--accent-solid, #4f90ff);
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--background, #fff);
+  margin-left: -8px;
+  position: relative;
+}
+
+.reservedAvatarLg:first-child {
+  margin-left: 0;
+}
+
+.detailReservedRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 0;
+}
+
+.slotAddPlayerBtn {
+  padding: 4px 12px;
+  border-radius: 12px;
+  border: 1px dashed var(--accent-solid, #4f90ff);
+  background: transparent;
+  color: var(--accent-solid, #4f90ff);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.slotAddPlayerBtn:hover {
+  background: color-mix(in srgb, var(--accent-solid, #4f90ff) 8%, transparent);
 }
 
 /* 15c. Detail modal footer */
@@ -1194,5 +1393,14 @@
 @media (max-width: 430px) {
   .sectionTitle {
     font-size: 1.1rem;
+  }
+
+  .sectionLogo {
+    height: 22px;
+  }
+
+  .sectionLogoLight,
+  .sectionLogoDark {
+    height: 22px;
   }
 }

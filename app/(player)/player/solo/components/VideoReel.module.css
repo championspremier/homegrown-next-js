@@ -1,0 +1,478 @@
+/* ══════════════════════════════════════════
+   Reel container — full bleed, edge-to-edge
+   The reel slides up behind the sticky tab bar
+   via negative margin. No padding-top so video
+   extends behind transparent tabs.
+   ══════════════════════════════════════════ */
+.reelContainer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow-y: scroll;
+  scroll-snap-type: y mandatory;
+  background: #000;
+  -webkit-overflow-scrolling: touch;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.reelContainer::-webkit-scrollbar {
+  display: none;
+}
+
+/* ══════════════════════════════════════════
+   Each video item — fills the visible area
+   ══════════════════════════════════════════ */
+.reelItem {
+  width: 100%;
+  height: 100dvh;
+  min-height: 100dvh;
+  scroll-snap-align: start;
+  position: relative;
+  overflow: hidden;
+  background: #000;
+}
+
+@media (min-width: 769px) {
+  .reelItem {
+    height: 100vh;
+    min-height: 100vh;
+  }
+}
+
+/* ══════════════════════════════════════════
+   FIX 2: Gradient scrims for readability
+   ══════════════════════════════════════════ */
+
+/* Top scrim: makes tab text readable over bright video */
+.reelItem::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 20%;
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.5) 0%, transparent 100%);
+  z-index: 2;
+  pointer-events: none;
+}
+
+/* Bottom scrim: makes text overlay readable */
+.reelItem::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 45%;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.75) 0%, rgba(0, 0, 0, 0.35) 50%, transparent 100%);
+  z-index: 2;
+  pointer-events: none;
+}
+
+/* ══════════════════════════════════════════
+   Video orientation
+   ══════════════════════════════════════════ */
+.reelVideoPortrait {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.reelVideoLandscape {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  background: #000;
+}
+
+/* ══════════════════════════════════════════
+   Play/Pause tap indicator (brief flash)
+   ══════════════════════════════════════════ */
+.tapIndicator {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.3);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 8;
+  pointer-events: none;
+  animation: tapPop 0.6s ease-out forwards;
+}
+
+@keyframes tapPop {
+  0% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(0.8);
+  }
+  40% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+/* Persistent pause overlay */
+.pausedIndicator {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.3);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 8;
+  opacity: 0.6;
+  cursor: pointer;
+}
+
+/* ══════════════════════════════════════════
+   FIX 3: Bottom controls row — time + mute
+   Sits just above the bottom of the reel item
+   (which aligns with the top of the mobile nav)
+   ══════════════════════════════════════════ */
+.bottomControls {
+  position: absolute;
+  bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+  left: 16px;
+  right: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 5;
+  pointer-events: none;
+}
+
+.bottomControls > * {
+  pointer-events: auto;
+}
+
+@media (min-width: 769px) {
+  .bottomControls {
+    bottom: 16px;
+  }
+}
+
+/* Duration pill — centered in bottom controls row */
+.durationPill {
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 500;
+  padding: 4px 12px;
+  border-radius: 14px;
+  backdrop-filter: blur(6px);
+  pointer-events: none;
+  letter-spacing: 0.03em;
+}
+
+/* Mute button — right side of bottom controls row */
+.muteBtn {
+  position: absolute;
+  right: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.45);
+  border: none;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  backdrop-filter: blur(6px);
+  transition: background 0.15s;
+}
+
+.muteBtn:hover {
+  background: rgba(0, 0, 0, 0.65);
+}
+
+/* ══════════════════════════════════════════
+   Bottom overlay — text + action buttons
+   Sits above the bottom controls row
+   ══════════════════════════════════════════ */
+.bottomOverlay {
+  position: absolute;
+  bottom: calc(120px + env(safe-area-inset-bottom, 0px));
+  left: 16px;
+  right: 16px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  z-index: 4;
+  pointer-events: none;
+}
+
+.bottomOverlay > * {
+  pointer-events: auto;
+}
+
+@media (min-width: 769px) {
+  .bottomOverlay {
+    bottom: 60px;
+  }
+}
+
+.bottomLeft {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-right: 8px;
+}
+
+.drillName {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #fff;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.7);
+  line-height: 1.3;
+}
+
+.coachingPoints {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.85);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  line-height: 1.4;
+}
+
+.bottomRight {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  flex-shrink: 0;
+}
+
+/* ── Action buttons ── */
+.goToSessionBtn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(8px);
+  border: 1.5px solid rgba(255, 255, 255, 0.35);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.15s;
+}
+
+.goToSessionBtn:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.goToSessionBtn:active {
+  transform: scale(0.92);
+}
+
+.fullscreenBtn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(8px);
+  border: 1.5px solid rgba(255, 255, 255, 0.35);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.15s;
+}
+
+.fullscreenBtn:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.fullscreenBtn:active {
+  transform: scale(0.92);
+}
+
+/* ── Tactical progress bar ── */
+.progressBarTrack {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.2);
+  z-index: 6;
+}
+
+.progressBarFill {
+  height: 100%;
+  background: var(--accent-solid, #3b82f6);
+  transition: width 0.3s linear;
+  border-radius: 0 2px 2px 0;
+}
+
+.awardedBadge {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(34, 197, 94, 0.9);
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 6px 16px;
+  border-radius: 20px;
+  z-index: 7;
+  animation: badgePop 0.3s ease-out;
+  pointer-events: none;
+}
+
+@keyframes badgePop {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.7);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+/* ── Empty state ── */
+.emptyReel {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.emptyReelText {
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 0.95rem;
+  font-weight: 500;
+  text-align: center;
+  padding: 24px;
+}
+
+/* ══════════════════════════════════════════
+   Video error fallback
+   ══════════════════════════════════════════ */
+.errorFallback {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  background: #1a1a2e;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.errorFallback svg {
+  opacity: 0.5;
+}
+
+.errorTitle {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #fff;
+}
+
+.errorSubtitle {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.5);
+  text-align: center;
+  max-width: 260px;
+  line-height: 1.4;
+}
+
+/* ── Desktop fullscreen lightbox ── */
+.fullscreenOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: rgba(0, 0, 0, 0.95);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.fullscreenVideo {
+  max-width: 95vw;
+  max-height: 90vh;
+  border-radius: 8px;
+}
+
+.fullscreenClose {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.15);
+  border: none;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 101;
+  transition: background 0.15s;
+}
+
+.fullscreenClose:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+/* ── Reel toast (points awarded) ── */
+.reelToast {
+  position: fixed;
+  top: calc(env(safe-area-inset-top, 0px) + 64px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(34, 197, 94, 0.9);
+  color: #fff;
+  padding: 8px 20px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  z-index: 50;
+  pointer-events: none;
+  animation: reelToastIn 0.3s ease-out;
+}
+
+@keyframes reelToastIn {
+  from { opacity: 0; transform: translateX(-50%) translateY(-10px); }
+  to { opacity: 1; transform: translateX(-50%) translateY(0); }
+}

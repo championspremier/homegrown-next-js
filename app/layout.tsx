@@ -3,7 +3,7 @@ import { ToastProvider } from "@/components/ui/Toast";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "HG Performance",
+  title: "Homegrown",
   description: "Homegrown – parent, player, coach",
   icons: {
     icon: "/logo-dark.png",

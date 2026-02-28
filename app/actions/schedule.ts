@@ -68,13 +68,32 @@ export async function bookIndividualSessionForPlayer(
 }
 
 export async function cancelReservation(
-  reservationId: string,
-  isIndividual: boolean
+  idValue: string,
+  isIndividual: boolean,
+  isReservationId: boolean = false
 ): Promise<CancelResult> {
   const supabase = await createClient();
+
+  let actualReservationId = idValue;
+
+  if (!isIndividual && !isReservationId) {
+    const { data: reservation } = await supabase
+      .from("session_reservations")
+      .select("id")
+      .eq("session_id", idValue)
+      .eq("reservation_status", "reserved")
+      .limit(1)
+      .maybeSingle();
+
+    if (!reservation) {
+      return { success: false, error: "Reservation not found" };
+    }
+    actualReservationId = reservation.id;
+  }
+
   // @ts-expect-error - RPC args type not inferred from Database schema
   const { error } = await supabase.rpc("cancel_reservation_for_player", {
-    p_reservation_id: reservationId,
+    p_reservation_id: actualReservationId,
     p_is_individual: isIndividual,
   });
   if (error) return { success: false, error: error.message };

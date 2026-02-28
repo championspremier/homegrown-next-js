@@ -615,27 +615,67 @@ export function ScheduleCalendar({ sessions, coaches, programs, sessionTypes, in
                         />
                       );
                     })}
-                    {sessionsByDay[dayYmd]?.map((session) => {
-                      const startMinutes = timeStringToMinutes(session.session_time);
-                      const sessionEndMinutes = startMinutes + session.duration_minutes;
-                      const overlapsAvailability = dayAvailabilityBlocks.some((block) => {
-                        const blockStartMin = block.startHour * 60;
-                        const blockEndMin = block.endHour * 60;
-                        return startMinutes < blockEndMin && sessionEndMinutes > blockStartMin;
-                      });
-                      const topPx = startMinutes - 5 * 60;
-                      const heightPx = Math.max(24, (session.duration_minutes / 60) * 60);
-                      const color = getSessionColor(session.session_type, sessionTypes);
-                      const isDragging = draggedSession?.id === session.id;
-                      return (
-                        <div
-                          key={session.id}
-                          className={`${styles.sessionBlock} ${isDragging ? styles.sessionBlockDragging : ""} ${overlapsAvailability ? styles.sessionBlockOverlapping : ""}`}
-                          style={{
-                            top: `${topPx}px`,
-                            height: `${heightPx}px`,
-                            backgroundColor: color,
-                          }}
+                    {(() => {
+                      const daySessions = sessionsByDay[dayYmd] || [];
+                      const overlapLayout = new Map<string, { col: number; totalCols: number }>();
+                      const sorted = [...daySessions].sort((a, b) =>
+                        a.session_time.localeCompare(b.session_time) || b.duration_minutes - a.duration_minutes
+                      );
+                      const cols: { id: string; end: number }[][] = [];
+                      for (const s of sorted) {
+                        const sStart = timeStringToMinutes(s.session_time);
+                        const sEnd = sStart + s.duration_minutes;
+                        let placed = false;
+                        for (let col = 0; col < cols.length; col++) {
+                          if (cols[col][cols[col].length - 1].end <= sStart) {
+                            cols[col].push({ id: s.id, end: sEnd });
+                            overlapLayout.set(s.id, { col, totalCols: 0 });
+                            placed = true;
+                            break;
+                          }
+                        }
+                        if (!placed) {
+                          cols.push([{ id: s.id, end: sEnd }]);
+                          overlapLayout.set(s.id, { col: cols.length - 1, totalCols: 0 });
+                        }
+                      }
+                      for (const s of sorted) {
+                        const sStart = timeStringToMinutes(s.session_time);
+                        const sEnd = sStart + s.duration_minutes;
+                        let maxCols = 1;
+                        for (const s2 of sorted) {
+                          if (s2.id === s.id) continue;
+                          const s2Start = timeStringToMinutes(s2.session_time);
+                          const s2End = s2Start + s2.duration_minutes;
+                          if (sStart < s2End && sEnd > s2Start) {
+                            maxCols = Math.max(maxCols, Math.max(overlapLayout.get(s.id)!.col, overlapLayout.get(s2.id)!.col) + 1);
+                          }
+                        }
+                        const ol = overlapLayout.get(s.id)!;
+                        ol.totalCols = Math.max(ol.totalCols, maxCols);
+                        overlapLayout.set(s.id, ol);
+                      }
+                      return daySessions.map((session) => {
+                        const startMinutes = timeStringToMinutes(session.session_time);
+                        const topPx = startMinutes - 5 * 60;
+                        const heightPx = Math.max(24, (session.duration_minutes / 60) * 60);
+                        const color = getSessionColor(session.session_type, sessionTypes);
+                        const isDragging = draggedSession?.id === session.id;
+                        const layout = overlapLayout.get(session.id) || { col: 0, totalCols: 1 };
+                        const colWidthPct = 100 / layout.totalCols;
+                        const blockLeftPct = layout.col * colWidthPct;
+                        return (
+                          <div
+                            key={session.id}
+                            className={`${styles.sessionBlock} ${isDragging ? styles.sessionBlockDragging : ""}`}
+                            style={{
+                              top: `${topPx}px`,
+                              height: `${heightPx}px`,
+                              backgroundColor: color,
+                              left: layout.totalCols > 1 ? `${blockLeftPct}%` : "2px",
+                              width: layout.totalCols > 1 ? `${colWidthPct}%` : undefined,
+                              right: layout.totalCols > 1 ? "auto" : "2px",
+                            }}
                           draggable={!isCoach || session.coach_id === currentCoachId}
                           onMouseEnter={(e) => {
                             if (isCoach && session.coach_id !== currentCoachId) return;
@@ -682,8 +722,9 @@ export function ScheduleCalendar({ sessions, coaches, programs, sessionTypes, in
                             <div className={styles.sessionBlockTime}>{formatTimeForDisplay(session.session_time)}</div>
                           </div>
                         </div>
-                      );
-                    })}
+                        );
+                      });
+                    })()}
                   </div>
                 );
               })}

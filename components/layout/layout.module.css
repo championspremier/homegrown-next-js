@@ -146,7 +146,7 @@
 
 .sidebarLabel {
   font-size: 15px;
-  line-height: 1;
+  line-height: 1.4;
   white-space: nowrap;
   opacity: 1;
   transition: opacity 200ms ease, width 200ms ease;
@@ -156,6 +156,32 @@
 
 .sidebarLink:hover .sidebarLabel {
   text-decoration: none;
+}
+
+/* Nav profile photo */
+.navProfilePhoto {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.navProfileImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.navProfileFallback {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* Collapsed state */

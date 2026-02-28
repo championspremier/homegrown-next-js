@@ -9,11 +9,12 @@ import type { NavItem } from "@/lib/nav";
 interface AppShellProps {
   navItems: NavItem[];
   roleHome: string;
+  profilePhotoUrl?: string | null;
   topbarRight?: React.ReactNode;
   children: React.ReactNode;
 }
 
-export function AppShell({ navItems, roleHome, topbarRight, children }: AppShellProps) {
+export function AppShell({ navItems, roleHome, profilePhotoUrl, topbarRight, children }: AppShellProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
@@ -21,6 +22,7 @@ export function AppShell({ navItems, roleHome, topbarRight, children }: AppShell
       <Sidebar
         navItems={navItems}
         roleHome={roleHome}
+        profilePhotoUrl={profilePhotoUrl}
         open={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
       />

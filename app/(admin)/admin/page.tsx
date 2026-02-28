@@ -14,7 +14,7 @@ export default async function AdminHomePage() {
   const { data: groupSessions } = await supabase
     .from("sessions")
     .select(
-      "id, session_type, session_date, session_time, duration_minutes, coach_id, assistant_coach_ids, gk_coach_id, attendance_limit, current_reservations, location, zoom_link, description, session_plan, status, location_type"
+      "id, session_type, session_date, session_time, duration_minutes, coach_id, assistant_coach_ids, gk_coach_id, attendance_limit, location, zoom_link, description, session_plan, status, location_type"
     )
     .eq("session_date", todayStr)
     .eq("status", "scheduled")
@@ -30,18 +30,23 @@ export default async function AdminHomePage() {
     .is("cancelled_at", null)
     .order("booking_time", { ascending: true });
 
+  const { data: soloBookings } = await supabase
+    .from("player_solo_session_bookings")
+    .select(
+      "id, player_id, solo_session_id, scheduled_date, scheduled_time, completion_photo_url, status, checked_in_at, checked_in_by, solo_sessions(id, title, skill, category)"
+    )
+    .eq("scheduled_date", todayStr)
+    .in("status", ["scheduled", "pending_review", "checked-in", "denied"])
+    .order("scheduled_time", { ascending: true });
+
   const groupSessionIds = (groupSessions || []).map((s: { id: string }) => s.id);
   let reservations: Record<string, unknown>[] = [];
   if (groupSessionIds.length > 0) {
-    const { data: resData, error: resError } = await supabase
+    const { data: resData } = await supabase
       .from("session_reservations")
       .select("id, session_id, player_id, reservation_status, checked_in_at, checked_in_by")
       .in("session_id", groupSessionIds)
       .in("reservation_status", ["reserved", "checked-in"]);
-
-    if (resError) {
-      console.error("Reservations error:", resError);
-    }
 
     if (resData && resData.length > 0) {
       const playerIds = [...new Set(resData.map((r) => r.player_id).filter(Boolean))];
@@ -65,12 +70,16 @@ export default async function AdminHomePage() {
   const individualPlayerIds = (individualBookings || [])
     .map((b: { player_id: string }) => b.player_id)
     .filter(Boolean);
+  const soloPlayerIds = (soloBookings || [])
+    .map((b: { player_id: string }) => b.player_id)
+    .filter(Boolean);
+  const allPlayerIds = Array.from(new Set([...individualPlayerIds, ...soloPlayerIds]));
   let individualPlayers: Record<string, unknown>[] = [];
-  if (individualPlayerIds.length > 0) {
+  if (allPlayerIds.length > 0) {
     const { data: playersData } = await supabase
       .from("profiles")
       .select("id, first_name, last_name, full_name")
-      .in("id", individualPlayerIds);
+      .in("id", allPlayerIds);
     individualPlayers = (playersData || []) as Record<string, unknown>[];
   }
 
@@ -127,6 +136,7 @@ export default async function AdminHomePage() {
       coaches={coaches}
       playerLookup={playerLookup}
       sessionTypeColors={sessionTypeColors}
+      soloBookings={(soloBookings || []) as never[]}
     />
   );
 }

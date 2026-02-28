@@ -14,7 +14,7 @@ export default async function CoachHomePage() {
   const { data: groupSessions } = await supabase
     .from("sessions")
     .select(
-      "id, session_type, session_date, session_time, duration_minutes, coach_id, assistant_coach_ids, gk_coach_id, attendance_limit, current_reservations, location, zoom_link, description, session_plan, status, location_type"
+      "id, session_type, session_date, session_time, duration_minutes, coach_id, assistant_coach_ids, gk_coach_id, attendance_limit, location, zoom_link, description, session_plan, status, location_type"
     )
     .eq("session_date", todayStr)
     .eq("status", "scheduled")

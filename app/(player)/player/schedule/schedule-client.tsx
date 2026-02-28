@@ -17,6 +17,11 @@ export interface PlayerScheduleClientProps {
   coachNames: Record<string, string>;
   coachFullNames: Record<string, string>;
   sessionTypeColors: Record<string, string>;
+  coachProfileDetails?: Record<string, { coachRole: string; profilePhotoUrl: string | null; teamLogos: string[] }>;
+  onFieldProgramLogoUrl?: string | null;
+  onBeforeBook?: (slot: MergedSlot, excludePlayerIds?: string[]) => Promise<{ playerIds: string[]; cancel: boolean }>;
+  onBeforeCancel?: (slot: MergedSlot, reservedPlayers: { playerId: string; playerName: string; reservationId: string }[]) => Promise<{ playerIds: string[]; cancel: boolean }>;
+  allLinkedPlayers?: { id: string; first_name: string | null; last_name: string | null }[];
 }
 
 /** Virtual section: combined group sessions + individual time slots, sorted by time */
@@ -66,7 +71,6 @@ interface Session {
   assistant_coach_ids: string[] | null;
   gk_coach_id: string | null;
   attendance_limit: number;
-  current_reservations: number;
   status: string;
   description: string | null;
 }
@@ -293,6 +297,10 @@ interface SlotCardProps {
   isReserved?: boolean;
   onSelect: () => void;
   onDetails: () => void;
+  reservedPlayers?: { playerName: string }[];
+  someReserved?: boolean;
+  allReserved?: boolean;
+  onAddPlayer?: () => void;
 }
 
 function SlotSkeleton() {
@@ -326,8 +334,12 @@ function SlotCard({
   isReserved = false,
   onSelect,
   onDetails,
+  reservedPlayers,
+  someReserved = false,
+  allReserved = false,
+  onAddPlayer,
 }: SlotCardProps) {
-  const disabled = isBooked || isPast || isReserved;
+  const disabled = isBooked || isPast || (isReserved && !onAddPlayer);
   return (
     <div
       role={disabled ? undefined : "button"}
@@ -356,12 +368,21 @@ function SlotCard({
           <div className={styles.slotCoachGroup}>
             <div className={styles.slotCoachAvatar}>
               {coachPhotoUrl ? (
-                <img src={coachPhotoUrl} alt="" />
-              ) : (
-                getInitials(coachFullName || coach.replace(/^Coach\s+/i, ""))
-              )}
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={coachPhotoUrl} alt="" className={styles.slotCoachAvatarImg} onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+              ) : null}
+              <span className={styles.slotCoachInitials}>{getInitials(coachFullName || coach.replace(/^Coach\s+/i, ""))}</span>
             </div>
             {!isSelected && <span className={styles.slotCoach}>{coach}</span>}
+            {reservedPlayers && reservedPlayers.length > 0 && (
+              <div className={styles.reservedAvatarStack}>
+                {reservedPlayers.map((p, i) => (
+                  <div key={i} className={styles.reservedAvatar} title={p.playerName}>
+                    {getInitials(p.playerName)}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -369,8 +390,8 @@ function SlotCard({
         <div className={styles.slotActions}>
           <span className={styles.slotPastLabel}>Past</span>
         </div>
-      ) : isReserved ? (
-        <div className={styles.slotActions} style={{ gap: 12 }}>
+      ) : isReserved || someReserved ? (
+        <div className={styles.slotActions} style={{ gap: 8 }}>
           <button
             type="button"
             className={styles.slotDetailsLink}
@@ -382,6 +403,18 @@ function SlotCard({
             Details
           </button>
           <span className={styles.slotReservedBadge}>✓ Reserved</span>
+          {someReserved && !allReserved && onAddPlayer && (
+            <button
+              type="button"
+              className={styles.slotAddPlayerBtn}
+              onClick={(e) => {
+                e.stopPropagation();
+                onAddPlayer();
+              }}
+            >
+              + Add
+            </button>
+          )}
         </div>
       ) : (
         <div className={styles.slotActions}>
@@ -408,6 +441,7 @@ interface CoachSelectionModalProps {
   selectedCoachId: string | null;
   coachNames: Record<string, string>;
   coachFullNames: Record<string, string>;
+  coachProfileDetails?: Record<string, { coachRole: string; profilePhotoUrl: string | null; teamLogos: string[] }>;
   onSelect: (id: string | null) => void;
   onClose: () => void;
   selectedDate: Date;
@@ -418,10 +452,13 @@ function CoachSelectionModal({
   selectedCoachId,
   coachNames: names,
   coachFullNames: fullNames,
+  coachProfileDetails: profiles,
   onSelect,
   onClose,
   selectedDate,
 }: CoachSelectionModalProps) {
+  const [coachRoleFilter, setCoachRoleFilter] = useState("all");
+
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
@@ -429,6 +466,24 @@ function CoachSelectionModal({
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [onClose]);
+
+  const availableRoles = useMemo(() => {
+    return [...new Set(
+      coaches.map((c) => profiles?.[c.coach_id]?.coachRole || "Coach")
+    )].sort();
+  }, [coaches, profiles]);
+
+  const filteredCoaches = useMemo(() => {
+    if (coachRoleFilter === "all") return coaches;
+    return coaches.filter((c) => (profiles?.[c.coach_id]?.coachRole || "Coach") === coachRoleFilter);
+  }, [coaches, coachRoleFilter, profiles]);
+
+  const formattedDate = selectedDate.toLocaleDateString("en-US", {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  });
 
   return (
     <div className={styles.modalOverlay} onClick={onClose} role="presentation">
@@ -439,19 +494,26 @@ function CoachSelectionModal({
             ✕
           </button>
         </div>
-        <p className={styles.modalSubtext}>
-          {selectedDate.toLocaleDateString("en-US", {
-            weekday: "long",
-            month: "long",
-            day: "numeric",
-            year: "numeric",
-          })}
-        </p>
-        {coaches.length === 0 ? (
+        <div className={styles.coachModalSubRow}>
+          <p className={styles.modalSubtext} style={{ margin: 0 }}>{formattedDate}</p>
+          {availableRoles.length > 1 && (
+            <select
+              className={styles.coachRoleFilterSelect}
+              value={coachRoleFilter}
+              onChange={(e) => setCoachRoleFilter(e.target.value)}
+            >
+              <option value="all">All Coaches</option>
+              {availableRoles.map((role) => (
+                <option key={role} value={role}>{role}</option>
+              ))}
+            </select>
+          )}
+        </div>
+        {filteredCoaches.length === 0 ? (
           <p className={styles.emptyState}>No coaches available on this day. Try another date.</p>
         ) : (
           <div className={styles.coachGrid}>
-            {coaches.length >= 2 && (
+            {filteredCoaches.length >= 2 && coachRoleFilter === "all" && (
               <button
                 type="button"
                 className={`${styles.coachCard} ${selectedCoachId === null ? styles.coachCardSelected : ""}`}
@@ -460,14 +522,18 @@ function CoachSelectionModal({
                   onClose();
                 }}
               >
-                <div className={styles.coachAvatarPlaceholder}>?</div>
+                <div className={styles.coachAvatarPlaceholder}>
+                  <span className={styles.coachInitials}>?</span>
+                </div>
                 <div className={styles.coachName}>Any available</div>
                 <div className={styles.coachRole}>Any Coach</div>
                 {selectedCoachId === null && <span className={styles.coachCheckmark}>✓</span>}
               </button>
             )}
-            {coaches.map((row) => {
+            {filteredCoaches.map((row) => {
               const isSelected = selectedCoachId === row.coach_id;
+              const profile = profiles?.[row.coach_id];
+              const initials = getInitials((fullNames[row.coach_id] || names[row.coach_id] || "").replace(/^Coach\s+/i, ""));
               return (
                 <button
                   key={row.id}
@@ -479,10 +545,27 @@ function CoachSelectionModal({
                   }}
                 >
                   <div className={styles.coachAvatarPlaceholder}>
-                    {getInitials((fullNames[row.coach_id] || names[row.coach_id] || "").replace(/^Coach\s+/i, ""))}
+                    {profile?.profilePhotoUrl && (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={profile.profilePhotoUrl}
+                        alt=""
+                        className={styles.coachAvatarImg}
+                        onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                      />
+                    )}
+                    <span className={styles.coachInitials}>{initials}</span>
                   </div>
                   <div className={styles.coachName}>{names[row.coach_id] || "Coach"}</div>
-                  <div className={styles.coachRole} />
+                  <div className={styles.coachRole}>{profile?.coachRole || "Coach"}</div>
+                  {profile?.teamLogos && profile.teamLogos.length > 0 && (
+                    <div className={styles.coachTeamLogos}>
+                      {profile.teamLogos.slice(0, 4).map((logo, i) => (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img key={i} src={logo} alt="" className={styles.coachTeamLogoImg} />
+                      ))}
+                    </div>
+                  )}
                   {isSelected && <span className={styles.coachCheckmark}>✓</span>}
                 </button>
               );
@@ -542,6 +625,7 @@ function SessionDetailsModal({
   cancellingSlotId,
   onConfirm,
   onCancel,
+  reservedPlayers,
 }: {
   slot: MergedSlot;
   onClose: () => void;
@@ -552,6 +636,7 @@ function SessionDetailsModal({
   cancellingSlotId: string | null;
   onConfirm: (slot: MergedSlot) => void;
   onCancel: (slot: MergedSlot) => void;
+  reservedPlayers?: { playerName: string }[];
 }) {
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
@@ -594,10 +679,10 @@ function SessionDetailsModal({
             <div className={styles.detailModalCoachSection}>
               <div className={styles.coachAvatarCircle}>
                 {slot.coachPhotoUrl ? (
-                  <img src={slot.coachPhotoUrl} alt={coachFullName} />
-                ) : (
-                  initials || "?"
-                )}
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={slot.coachPhotoUrl} alt="" className={styles.coachAvatarCircleImg} onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+                ) : null}
+                <span>{initials || "?"}</span>
               </div>
               <div className={styles.coachAvatarInfo}>
                 <span className={styles.coachAvatarName}>{slot.coach}</span>
@@ -698,6 +783,18 @@ function SessionDetailsModal({
               <span className={styles.detailItemValue}>{slot.description}</span>
             </div>
           )}
+          {reservedPlayers && reservedPlayers.length > 0 && (
+            <div className={styles.detailReservedRow}>
+              <span className={styles.detailItemLabel}>Reserved</span>
+              <div className={styles.reservedAvatarStack}>
+                {reservedPlayers.map((p, i) => (
+                  <div key={i} className={styles.reservedAvatarLg} title={p.playerName}>
+                    {getInitials(p.playerName)}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Footer with action button */}
@@ -750,8 +847,14 @@ export default function PlayerScheduleClient({
   coachNames,
   coachFullNames,
   sessionTypeColors,
+  coachProfileDetails,
+  onFieldProgramLogoUrl,
+  onBeforeBook,
+  onBeforeCancel,
+  allLinkedPlayers,
 }: PlayerScheduleClientProps) {
   const { showToast } = useToast();
+  const linkedIdsKey = useMemo(() => allLinkedPlayers?.map((p) => p.id).join(",") ?? "", [allLinkedPlayers]);
   const [onFieldOpen, setOnFieldOpen] = useState(false);
   const [virtualOpen, setVirtualOpen] = useState(false);
   const coachNameCacheRef = useRef<Record<string, string>>({ ...coachNames });
@@ -785,6 +888,9 @@ export default function PlayerScheduleClient({
 
   const [myGroupReservations, setMyGroupReservations] = useState<Set<string>>(new Set());
   const [myIndividualBookings, setMyIndividualBookings] = useState<Set<string>>(new Set());
+  const [sessionPlayerReservations, setSessionPlayerReservations] = useState<
+    Record<string, { playerId: string; playerName: string; reservationId: string }[]>
+  >({});
   const [blockedCoachIds, setBlockedCoachIds] = useState<Set<string>>(new Set());
 
   const uniqueCoachesForModal = useMemo(() => {
@@ -836,7 +942,7 @@ export default function PlayerScheduleClient({
     const { data, error } = await supabase
       .from("sessions")
       .select(
-        "id, session_type, session_date, session_time, duration_minutes, location_type, location, zoom_link, coach_id, assistant_coach_ids, gk_coach_id, attendance_limit, current_reservations, status, description"
+        "id, session_type, session_date, session_time, duration_minutes, location_type, location, zoom_link, coach_id, assistant_coach_ids, gk_coach_id, attendance_limit, status, description"
       )
       .eq("location_type", "virtual")
       .eq("session_date", dateStr)
@@ -848,6 +954,20 @@ export default function PlayerScheduleClient({
       return;
     }
     const sessions = (data ?? []) as Record<string, unknown>[];
+
+    const sessionIds = sessions.map((s) => s.id as string);
+    const reservationCountMap: Record<string, number> = {};
+    if (sessionIds.length > 0) {
+      const { data: countData } = await supabase
+        .from("session_reservations")
+        .select("session_id")
+        .in("session_id", sessionIds)
+        .eq("reservation_status", "reserved");
+      (countData ?? []).forEach((r: { session_id: string }) => {
+        reservationCountMap[r.session_id] = (reservationCountMap[r.session_id] || 0) + 1;
+      });
+    }
+
     const allIds = new Set<string>();
     sessions.forEach((s) => {
       if (s.coach_id) allIds.add(s.coach_id as string);
@@ -872,11 +992,12 @@ export default function PlayerScheduleClient({
         coach: (session.coach_id != null ? (names[session.coach_id as string] || coachNames[session.coach_id as string]) : null) || "Coach",
         coachId: (session.coach_id as string) ?? null,
         coachFullName: session.coach_id != null ? coachFullNames[session.coach_id as string] : undefined,
+        coachPhotoUrl: session.coach_id != null ? coachProfileDetails?.[session.coach_id as string]?.profilePhotoUrl ?? undefined : undefined,
         location: (session.location as string) ?? "Virtual",
         zoomLink: (session.zoom_link as string) || undefined,
         capacity:
           (session.attendance_limit as number) > 0
-            ? `${(session.current_reservations as number) ?? 0}/${session.attendance_limit as number} spots`
+            ? `${reservationCountMap[session.id as string] ?? 0}/${session.attendance_limit as number} spots`
             : undefined,
         sessionId: session.id as string,
         bookingDate: dateStr,
@@ -900,7 +1021,7 @@ export default function PlayerScheduleClient({
     });
     setVirtualGroupSlots(groupSlots);
     setLoadingVirtualGroup(false);
-  }, [coachNames, coachFullNames, sessionTypeColors]);
+  }, [coachNames, coachFullNames, sessionTypeColors, coachProfileDetails]);
 
   const fetchAllCoachesForVirtual = useCallback(async () => {
     const typeIds = [
@@ -1113,6 +1234,7 @@ export default function PlayerScheduleClient({
             coach: coachName,
             coachId: cid ?? null,
             coachFullName: cid != null ? coachFullNames[cid] : undefined,
+            coachPhotoUrl: cid != null ? coachProfileDetails?.[cid]?.profilePhotoUrl ?? undefined : undefined,
             location: s.location || typeData.location || "Virtual",
             zoomLink: typeData.zoom_link || undefined,
             sessionTypeId: typeData.id,
@@ -1142,7 +1264,7 @@ export default function PlayerScheduleClient({
       setVirtualSlots(merged);
       setLoadingVirtual(false);
     },
-    [virtualIndividualSessionTypes, coachAvailability, coachNames, generateTimeSlots]
+    [virtualIndividualSessionTypes, coachAvailability, coachNames, coachProfileDetails, generateTimeSlots]
   );
 
   const fetchOnFieldSlots = useCallback(
@@ -1163,7 +1285,7 @@ export default function PlayerScheduleClient({
       const { data: groupData, error } = await supabase
         .from("sessions")
         .select(
-          "id, session_type, session_date, session_time, duration_minutes, location_type, location, zoom_link, coach_id, assistant_coach_ids, gk_coach_id, attendance_limit, current_reservations, status, description"
+          "id, session_type, session_date, session_time, duration_minutes, location_type, location, zoom_link, coach_id, assistant_coach_ids, gk_coach_id, attendance_limit, status, description"
         )
         .eq("location_type", "on-field")
         .eq("session_date", dateStr)
@@ -1171,6 +1293,20 @@ export default function PlayerScheduleClient({
         .order("session_time", { ascending: true });
       if (!error && groupData) {
         const sessions = groupData as Record<string, unknown>[];
+
+        const onFieldSessionIds = sessions.map((s) => s.id as string);
+        const onFieldCountMap: Record<string, number> = {};
+        if (onFieldSessionIds.length > 0) {
+          const { data: countData } = await supabase
+            .from("session_reservations")
+            .select("session_id")
+            .in("session_id", onFieldSessionIds)
+            .eq("reservation_status", "reserved");
+          (countData ?? []).forEach((r: { session_id: string }) => {
+            onFieldCountMap[r.session_id] = (onFieldCountMap[r.session_id] || 0) + 1;
+          });
+        }
+
         const allIds = new Set<string>();
         sessions.forEach((s) => {
           if (s.coach_id) allIds.add(s.coach_id as string);
@@ -1196,10 +1332,11 @@ export default function PlayerScheduleClient({
             coach: coachIdVal != null ? (names[coachIdVal] || coachNames[coachIdVal] || "Coach") : "Coach",
             coachId: coachIdVal,
             coachFullName: coachIdVal != null ? coachFullNames[coachIdVal] : undefined,
+            coachPhotoUrl: coachIdVal != null ? coachProfileDetails?.[coachIdVal]?.profilePhotoUrl ?? undefined : undefined,
             location: (session.location as string) ?? null,
             capacity:
               (session.attendance_limit as number) > 0
-                ? `${(session.current_reservations as number) ?? 0}/${session.attendance_limit as number} spots`
+                ? `${onFieldCountMap[session.id as string] ?? 0}/${session.attendance_limit as number} spots`
                 : undefined,
             sessionId: session.id as string,
             bookingDate: dateStr,
@@ -1242,6 +1379,7 @@ export default function PlayerScheduleClient({
             coach: cid != null ? (coachNames[cid] || coachNameCacheRef.current[cid] || "Coach") : "Any available",
             coachId: cid ?? null,
             coachFullName: cid != null ? coachFullNames[cid] : undefined,
+            coachPhotoUrl: cid != null ? coachProfileDetails?.[cid]?.profilePhotoUrl ?? undefined : undefined,
             location: s.location || typeData.location || "On-field",
             sessionTypeId: typeData.id,
             bookingDate: formatDateString(date),
@@ -1270,7 +1408,7 @@ export default function PlayerScheduleClient({
       setOnFieldSlots(merged);
       setLoadingOnField(false);
     },
-    [onFieldIndividualSessionTypes, coachAvailability, coachNames, generateTimeSlots, sessionTypeColors]
+    [onFieldIndividualSessionTypes, coachAvailability, coachNames, coachProfileDetails, generateTimeSlots, sessionTypeColors]
   );
 
   useEffect(() => {
@@ -1305,18 +1443,22 @@ export default function PlayerScheduleClient({
 
   useEffect(() => {
     if (!playerId) return;
+    const playerIdsToCheck = linkedIdsKey
+      ? linkedIdsKey.split(",")
+      : [playerId];
+
     async function fetchMyBookings() {
       const supabase = createClient();
       const [{ data: groupRes }, { data: indRes }] = await Promise.all([
         supabase
           .from("session_reservations")
-          .select("session_id")
-          .eq("player_id", playerId)
+          .select("id, session_id, player_id")
+          .in("player_id", playerIdsToCheck)
           .eq("reservation_status", "reserved"),
         supabase
           .from("individual_session_bookings")
           .select("booking_date, booking_time, coach_id")
-          .eq("player_id", playerId)
+          .in("player_id", playerIdsToCheck)
           .in("status", ["confirmed", "pending"]),
       ]);
       setMyGroupReservations(
@@ -1330,9 +1472,24 @@ export default function PlayerScheduleClient({
           )
         )
       );
+
+      if (allLinkedPlayers && allLinkedPlayers.length > 0 && groupRes) {
+        const map: Record<string, { playerId: string; playerName: string; reservationId: string }[]> = {};
+        (groupRes as { id: string; session_id: string; player_id: string }[]).forEach((r) => {
+          const player = allLinkedPlayers.find((p) => p.id === r.player_id);
+          const name = player
+            ? [player.first_name, player.last_name].filter(Boolean).join(" ") || "Player"
+            : "Player";
+          if (!map[r.session_id]) map[r.session_id] = [];
+          map[r.session_id].push({ playerId: r.player_id, playerName: name, reservationId: r.id });
+        });
+        setSessionPlayerReservations(map);
+      } else {
+        setSessionPlayerReservations({});
+      }
     }
     fetchMyBookings();
-  }, [playerId, refreshKey]);
+  }, [playerId, linkedIdsKey, refreshKey, allLinkedPlayers]);
 
   const isSlotReserved = useCallback(
     (slot: MergedSlot): boolean => {
@@ -1379,8 +1536,69 @@ export default function PlayerScheduleClient({
   }, []);
 
   const handleConfirmBooking = useCallback(
-    async (slot: MergedSlot) => {
+    async (slot: MergedSlot, excludePlayerIds?: string[]) => {
       if (bookingStatus === "loading") return;
+
+      if (onBeforeBook) {
+        const result = await onBeforeBook(slot, excludePlayerIds);
+        if (result.cancel) return;
+
+        setBookingSlotId(slot.id);
+        setBookingStatus("loading");
+        setBookingError(null);
+
+        let successCount = 0;
+        let lastError: string | null = null;
+
+        for (const pid of result.playerIds) {
+          try {
+            if (slot.badge === "group") {
+              const res = await reserveGroupSession(slot.sessionId!, pid);
+              if (!res.success) {
+                lastError = res.error || "Booking failed";
+                continue;
+              }
+              successCount++;
+            } else {
+              const bookingTime = slot.bookingTime || (slot.time.length === 5 ? slot.time + ":00" : slot.time);
+              const bookingDate = slot.bookingDate || formatDateString(selectedDate);
+              const res = await bookIndividualSessionForPlayer(
+                slot.sessionTypeId!,
+                slot.coachId!,
+                pid,
+                parentId,
+                bookingDate,
+                bookingTime,
+                slot.durationMinutes || 60
+              );
+              if (!res.success) {
+                lastError = res.error || "Booking failed";
+                continue;
+              }
+              successCount++;
+            }
+          } catch {
+            lastError = "Something went wrong. Please try again.";
+          }
+        }
+
+        if (successCount > 0) {
+          setBookingStatus("success");
+          showToast(`Reserved for ${successCount} player${successCount > 1 ? "s" : ""}`, "success");
+        } else {
+          setBookingStatus("error");
+          setBookingError(lastError || "Booking failed");
+        }
+
+        setTimeout(() => {
+          setBookingStatus("idle");
+          setBookingSlotId(null);
+          setSelectedSlotId(null);
+          setDetailSlot(null);
+          setRefreshKey((k) => k + 1);
+        }, 2000);
+        return;
+      }
 
       setBookingSlotId(slot.id);
       setBookingStatus("loading");
@@ -1427,7 +1645,7 @@ export default function PlayerScheduleClient({
         setBookingError("Something went wrong. Please try again.");
       }
     },
-    [bookingStatus, playerId, parentId, selectedDate]
+    [bookingStatus, playerId, parentId, selectedDate, onBeforeBook]
   );
 
   const handleCancelBooking = useCallback(
@@ -1437,7 +1655,53 @@ export default function PlayerScheduleClient({
 
       try {
         if (slot.badge === "group" && slot.sessionId) {
-          const result = await cancelReservation(slot.sessionId, false);
+          const reservedPlayers = sessionPlayerReservations[slot.sessionId] || [];
+
+          if (onBeforeCancel && reservedPlayers.length > 0) {
+            const result = await onBeforeCancel(slot, reservedPlayers);
+            if (result.cancel) {
+              setCancellingSlotId(null);
+              return;
+            }
+
+            let cancelError: string | null = null;
+            for (const pid of result.playerIds) {
+              const playerRes = reservedPlayers.find((r) => r.playerId === pid);
+              if (playerRes) {
+                const res = await cancelReservation(playerRes.reservationId, false, true);
+                if (!res.success) {
+                  cancelError = res.error || "Cancel failed";
+                }
+              }
+            }
+
+            if (cancelError) {
+              showToast(cancelError, "error");
+            }
+
+            setRefreshKey((k) => k + 1);
+            setCancellingSlotId(null);
+            setDetailSlot(null);
+            setSelectedSlotId(null);
+            return;
+          }
+
+          const supabaseLookup = createClient();
+          const { data: resRow } = await supabaseLookup
+            .from("session_reservations")
+            .select("id")
+            .eq("session_id", slot.sessionId)
+            .eq("player_id", playerId)
+            .eq("reservation_status", "reserved")
+            .maybeSingle() as { data: { id: string } | null };
+
+          if (!resRow) {
+            showToast("Reservation not found", "error");
+            setCancellingSlotId(null);
+            return;
+          }
+
+          const result = await cancelReservation(resRow.id, false, true);
           if (!result.success) {
             showToast(result.error || "Failed to cancel reservation.", "error");
             setCancellingSlotId(null);
@@ -1471,7 +1735,7 @@ export default function PlayerScheduleClient({
         setCancellingSlotId(null);
       }
     },
-    [cancellingSlotId, playerId]
+    [cancellingSlotId, playerId, onBeforeCancel, sessionPlayerReservations]
   );
 
   return (
@@ -1491,6 +1755,13 @@ export default function PlayerScheduleClient({
           >
             ▾
           </span>
+          {onFieldProgramLogoUrl && (
+            <img
+              src={onFieldProgramLogoUrl}
+              alt="Program logo"
+              className={styles.sectionLogo}
+            />
+          )}
         </div>
 
         {onFieldOpen && (
@@ -1545,6 +1816,10 @@ export default function PlayerScheduleClient({
                       <>
                         {visible.map((slot) => {
                           const reserved = isSlotReserved(slot);
+                          const slotReservations = slot.sessionId ? sessionPlayerReservations[slot.sessionId] || [] : [];
+                          const reservedForSlot = slotReservations.map((r) => ({ playerName: r.playerName }));
+                          const someLinkedReserved = slotReservations.length > 0;
+                          const allLinkedReserved = !!allLinkedPlayers && slotReservations.length >= allLinkedPlayers.length;
                           return (
                           <div key={slot.id}>
                             <div className={styles.slotRow}>
@@ -1563,6 +1838,14 @@ export default function PlayerScheduleClient({
                                 isReserved={reserved}
                                 onSelect={() => setSelectedSlotId(slot.id)}
                                 onDetails={() => setDetailSlot(slot)}
+                                reservedPlayers={allLinkedPlayers ? reservedForSlot : undefined}
+                                someReserved={!!allLinkedPlayers && someLinkedReserved}
+                                allReserved={allLinkedReserved}
+                                onAddPlayer={
+                                  someLinkedReserved && !allLinkedReserved && onBeforeBook
+                                    ? () => handleConfirmBooking(slot, slotReservations.map((r) => r.playerId))
+                                    : undefined
+                                }
                               />
                               {selectedSlotId === slot.id && !slot.booked && !slot.isPast && !reserved && (
                                 <button
@@ -1630,6 +1913,10 @@ export default function PlayerScheduleClient({
           >
             ▾
           </span>
+          <div className={styles.sectionLogo}>
+            <img src="/logo-light.png" alt="Homegrown" className={styles.sectionLogoLight} />
+            <img src="/logo-dark.png" alt="Homegrown" className={styles.sectionLogoDark} />
+          </div>
         </div>
 
         {virtualOpen && (
@@ -1674,9 +1961,15 @@ export default function PlayerScheduleClient({
                 >
                   <div className={styles.staffDropdownInner}>
                     <div className={styles.slotCoachAvatar}>
-                      {selectedCoachId && coachNames[selectedCoachId]
-                        ? getInitials((coachFullNames[selectedCoachId] || coachNames[selectedCoachId] || "").replace(/^Coach\s+/i, ""))
-                        : "?"}
+                      {selectedCoachId && coachProfileDetails?.[selectedCoachId]?.profilePhotoUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={coachProfileDetails[selectedCoachId].profilePhotoUrl!} alt="" className={styles.slotCoachAvatarImg} onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+                      ) : null}
+                      <span className={styles.slotCoachInitials}>
+                        {selectedCoachId && coachNames[selectedCoachId]
+                          ? getInitials((coachFullNames[selectedCoachId] || coachNames[selectedCoachId] || "").replace(/^Coach\s+/i, ""))
+                          : "?"}
+                      </span>
                     </div>
                     <span>
                       {selectedCoachId != null
@@ -1738,6 +2031,10 @@ export default function PlayerScheduleClient({
                         <>
                           {visible.map((slot) => {
                             const reserved = isSlotReserved(slot);
+                            const slotReservations = slot.sessionId ? sessionPlayerReservations[slot.sessionId] || [] : [];
+                            const reservedForSlot = slotReservations.map((r) => ({ playerName: r.playerName }));
+                            const someLinkedReserved = slotReservations.length > 0;
+                            const allLinkedReserved = !!allLinkedPlayers && slotReservations.length >= allLinkedPlayers.length;
                             return (
                             <div key={slot.id}>
                               <div className={styles.slotRow}>
@@ -1756,6 +2053,14 @@ export default function PlayerScheduleClient({
                                   isReserved={reserved}
                                   onSelect={() => setSelectedSlotId(slot.id)}
                                   onDetails={() => setDetailSlot(slot)}
+                                  reservedPlayers={allLinkedPlayers ? reservedForSlot : undefined}
+                                  someReserved={!!allLinkedPlayers && someLinkedReserved}
+                                  allReserved={allLinkedReserved}
+                                  onAddPlayer={
+                                    someLinkedReserved && !allLinkedReserved && onBeforeBook
+                                      ? () => handleConfirmBooking(slot, slotReservations.map((r) => r.playerId))
+                                      : undefined
+                                  }
                                 />
                                 {selectedSlotId === slot.id && !slot.isPast && !reserved && (
                                   <button
@@ -1905,6 +2210,7 @@ export default function PlayerScheduleClient({
           selectedCoachId={selectedCoachId}
           coachNames={coachNames}
           coachFullNames={coachFullNames}
+          coachProfileDetails={coachProfileDetails}
           onSelect={(id) => setSelectedCoachId(id)}
           onClose={() => setShowCoachModal(false)}
           selectedDate={selectedDate}
@@ -1922,6 +2228,11 @@ export default function PlayerScheduleClient({
           cancellingSlotId={cancellingSlotId}
           onConfirm={handleConfirmBooking}
           onCancel={handleCancelBooking}
+          reservedPlayers={
+            allLinkedPlayers && detailSlot.sessionId
+              ? (sessionPlayerReservations[detailSlot.sessionId] || []).map((r) => ({ playerName: r.playerName }))
+              : undefined
+          }
         />
       )}
     </div>
