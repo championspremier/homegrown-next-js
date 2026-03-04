@@ -12,7 +12,7 @@ export const TECHNICAL_SKILLS_BY_PERIOD: Record<string, string[]> = {
 
 // ── PHYSICAL: same across all periods ──
 export const PHYSICAL_SKILLS = [
-  "conditioning", "lower-body", "upper-body", "core", "speed", "plyometrics", "whole-body"
+  "conditioning", "lower-body", "upper-body", "core", "speed", "plyometrics", "whole-body", "nutrition"
 ];
 
 // Speed has sub-skills
@@ -73,6 +73,11 @@ export function getSkillsForCategory(category: Category, period?: string): strin
     case "tactical":
       return [];
   }
+}
+
+export function getDefaultPhysicalSeason(): string {
+  const month = new Date().getMonth();
+  return month >= 5 && month <= 6 ? "off-season" : "in-season";
 }
 
 export function formatLabel(s: string): string {

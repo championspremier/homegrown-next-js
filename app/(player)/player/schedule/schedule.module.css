@@ -1085,9 +1085,15 @@
 @media (max-width: 768px) {
   .scheduleLayout {
     flex-direction: column;
+    gap: 0;
   }
 
   .calendarPanel {
+    width: 100%;
+    min-width: unset;
+  }
+
+  .slotsPanel {
     width: 100%;
   }
 
@@ -1391,6 +1397,35 @@
 
 /* 16. Responsive (max-width 430px) */
 @media (max-width: 430px) {
+  .scheduleContainer {
+    width: 100%;
+    padding: 0 10px;
+    box-sizing: border-box;
+    overflow-x: hidden;
+  }
+
+  .calendarWeekRow {
+    justify-content: space-between;
+  }
+
+  .calendarDay {
+    padding: 4px 2px;
+    min-width: 0;
+    flex: 1;
+  }
+
+  .dayNumber {
+    width: 32px;
+    height: 32px;
+    font-size: 0.85rem;
+  }
+
+  .calendarNav {
+    width: 32px;
+    height: 32px;
+    flex-shrink: 0;
+  }
+
   .sectionTitle {
     font-size: 1.1rem;
   }

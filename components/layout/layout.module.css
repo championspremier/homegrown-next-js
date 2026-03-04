@@ -346,6 +346,12 @@
   }
 }
 
+@media (min-width: 769px) {
+  .topbarHideDesktop {
+    display: none;
+  }
+}
+
 .topbarLeft {
   display: flex;
   align-items: center;

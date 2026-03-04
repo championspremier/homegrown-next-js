@@ -1,0 +1,810 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 0 60px;
+}
+
+/* ─── Sections ─── */
+.section {
+  background: var(--surface, var(--background));
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 24px;
+}
+
+.sectionTitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--foreground);
+  margin: 0 0 16px;
+}
+
+.sectionTitleRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 0;
+}
+
+.sectionTitleRow .sectionTitle {
+  margin-bottom: 12px;
+}
+
+.gridRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+@media (max-width: 1024px) {
+  .gridRow {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ─── Messages ─── */
+.messageComposer {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.messageInput {
+  width: 100%;
+  min-height: 100px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--background);
+  color: var(--foreground);
+  font-size: 0.9rem;
+  resize: vertical;
+  font-family: inherit;
+}
+
+.messageInput:focus {
+  outline: none;
+  border-color: var(--accent-solid);
+}
+
+.messageActions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.recipientPills {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.recipientPill {
+  padding: 6px 14px;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.recipientPill:hover {
+  border-color: var(--accent-solid);
+  color: var(--foreground);
+}
+
+.recipientPillActive {
+  background: var(--accent);
+  color: var(--accent-foreground);
+  border-color: transparent;
+}
+
+/* ─── Announcement type select ─── */
+.announcementSelect {
+  padding: 8px 32px 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--background);
+  color: var(--foreground);
+  font-size: 0.82rem;
+  font-weight: 500;
+  font-family: inherit;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  cursor: pointer;
+}
+
+.announcementSelect:focus {
+  outline: none;
+  border-color: var(--accent-solid);
+}
+
+.sendBtn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  border-radius: 12px;
+  border: none;
+  background: var(--accent-solid, #3b82f6);
+  color: #fff;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, opacity 0.15s;
+  white-space: nowrap;
+}
+
+.sendBtn:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.sendBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.rateLimitHint {
+  font-size: 0.72rem;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.messageHistory {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 360px;
+  overflow-y: auto;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.messageCard {
+  padding: 12px;
+  border-radius: 10px;
+  background: var(--background);
+  border: 1px solid var(--border);
+}
+
+.messageCardTop {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+  gap: 8px;
+}
+
+.messageCoach {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--foreground);
+}
+
+.messageBadges {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.messageBadge {
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  padding: 2px 8px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--accent-solid) 15%, transparent);
+  color: var(--accent-solid);
+}
+
+.messageBadge[data-type="players"] {
+  background: rgba(59, 130, 246, 0.12);
+  color: #3b82f6;
+}
+
+.messageBadge[data-type="parents"] {
+  background: rgba(139, 92, 246, 0.12);
+  color: #8b5cf6;
+}
+
+.messageBadge[data-type="coaches"] {
+  background: rgba(234, 179, 8, 0.12);
+  color: #eab308;
+}
+
+.messageBadge[data-type="admins"] {
+  background: rgba(236, 72, 153, 0.12);
+  color: #ec4899;
+}
+
+/* ─── Announcement type badges ─── */
+.announceBadge {
+  font-size: 0.65rem;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 6px;
+  background: rgba(107, 114, 128, 0.12);
+  color: #6b7280;
+}
+
+.announceBadge[data-atype="time_change"],
+.announceBadge[data-atype="cancellation"] {
+  background: rgba(239, 68, 68, 0.12);
+  color: #ef4444;
+}
+
+.announceBadge[data-atype="popup_session"],
+.announceBadge[data-atype="veo_link"] {
+  background: rgba(16, 185, 129, 0.12);
+  color: #10b981;
+}
+
+.announceBadge[data-atype="merch"] {
+  background: rgba(59, 130, 246, 0.12);
+  color: #3b82f6;
+}
+
+.messageText {
+  font-size: 0.88rem;
+  color: var(--foreground);
+  margin: 0 0 4px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+}
+
+.messageTime {
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+/* ─── CPP Info tooltip ─── */
+.infoWrap {
+  position: relative;
+}
+
+.infoBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+
+.infoBtn:hover {
+  border-color: var(--accent-solid);
+  color: var(--accent-solid);
+}
+
+.infoTooltip {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 280px;
+  padding: 12px 14px;
+  background: var(--surface, var(--background));
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  font-size: 0.8rem;
+  color: var(--foreground);
+  line-height: 1.5;
+  z-index: 30;
+  animation: tooltipIn 0.15s ease;
+}
+
+@keyframes tooltipIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ─── Curriculum banner ─── */
+.curriculumBanner {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--accent-solid) 8%, transparent);
+  margin-bottom: 14px;
+}
+
+.curriculumLabel {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.curriculumPeriod {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--accent-solid);
+  letter-spacing: 0.3px;
+}
+
+/* ─── Player positions ─── */
+.positionPills {
+  display: inline-flex;
+  gap: 4px;
+  margin-left: 6px;
+}
+
+.positionPill {
+  font-size: 0.65rem;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--accent-solid) 12%, transparent);
+  color: var(--accent-solid);
+}
+
+.positionsMuted {
+  margin-left: 6px;
+  font-size: 0.78rem;
+  font-weight: 400;
+  color: var(--muted);
+}
+
+/* ─── Player Search (Objectives) ─── */
+.playerSearchWrap {
+  position: relative;
+  margin-bottom: 12px;
+}
+
+.searchInputWrap {
+  position: relative;
+}
+
+.searchIcon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--muted);
+  pointer-events: none;
+}
+
+.searchInput {
+  width: 100%;
+  padding: 10px 12px 10px 36px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--background);
+  color: var(--foreground);
+  font-size: 0.88rem;
+  font-family: inherit;
+}
+
+.searchInput:focus {
+  outline: none;
+  border-color: var(--accent-solid);
+}
+
+.searchResults {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 20;
+  background: var(--surface, var(--background));
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.searchResultItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  text-align: left;
+  padding: 10px 14px;
+  border: none;
+  background: transparent;
+  color: var(--foreground);
+  font-size: 0.88rem;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.searchResultItem:hover {
+  background: color-mix(in srgb, var(--accent-solid) 8%, transparent);
+}
+
+.selectedPlayer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: color-mix(in srgb, var(--accent-solid) 10%, transparent);
+  border: 1px solid var(--accent-solid);
+  border-radius: 10px;
+}
+
+.selectedPlayerName {
+  flex: 1;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--foreground);
+  display: flex;
+  align-items: center;
+}
+
+.removePlayerBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: none;
+  background: var(--border);
+  color: var(--foreground);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.removePlayerBtn:hover {
+  background: #ef4444;
+  color: white;
+}
+
+/* ─── Objectives Form ─── */
+.objectivesForm {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.fieldLabel {
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  color: var(--muted);
+  margin-top: 4px;
+}
+
+.objectiveTextarea {
+  width: 100%;
+  min-height: 72px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--background);
+  color: var(--foreground);
+  font-size: 0.88rem;
+  resize: vertical;
+  font-family: inherit;
+}
+
+.objectiveTextarea:focus {
+  outline: none;
+  border-color: var(--accent-solid);
+}
+
+.loadingText {
+  font-size: 0.85rem;
+  color: var(--muted);
+  text-align: center;
+  padding: 20px 0;
+}
+
+.currentObjectives {
+  padding: 12px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--accent-solid) 6%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent-solid) 20%, transparent);
+  margin-bottom: 4px;
+}
+
+.currentLabel {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--accent-solid);
+  display: block;
+  margin-bottom: 6px;
+}
+
+.currentText {
+  font-size: 0.82rem;
+  color: var(--foreground);
+  margin: 4px 0;
+  line-height: 1.4;
+}
+
+/* ─── Quiz Creator ─── */
+.quizOptionsList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.quizOptionRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.optionLabel {
+  width: 24px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--muted);
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.optionInput {
+  flex: 1;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--background);
+  color: var(--foreground);
+  font-size: 0.88rem;
+  font-family: inherit;
+}
+
+.optionInput:focus {
+  outline: none;
+  border-color: var(--accent-solid);
+}
+
+.correctBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  border: 2px solid var(--border);
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.15s;
+}
+
+.correctBtn:hover {
+  border-color: #10b981;
+  color: #10b981;
+  background: rgba(16, 185, 129, 0.08);
+}
+
+.correctBtnActive {
+  background: #10b981;
+  border-color: #10b981;
+  color: white;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+}
+
+.removeOptBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: color 0.15s;
+}
+
+.removeOptBtn:hover {
+  color: #ef4444;
+}
+
+.addOptionBtn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 14px;
+  border: 1px dashed var(--border);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+  width: fit-content;
+  margin-bottom: 12px;
+}
+
+.addOptionBtn:hover {
+  border-color: var(--accent-solid);
+  color: var(--accent-solid);
+}
+
+.quizMeta {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+
+.quizMetaField {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.metaSelect {
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--background);
+  color: var(--foreground);
+  font-size: 0.88rem;
+  font-family: inherit;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 32px;
+}
+
+.metaSelect:focus {
+  outline: none;
+  border-color: var(--accent-solid);
+}
+
+.quizSendBtn {
+  margin-top: 12px;
+  width: 100%;
+  justify-content: center;
+}
+
+.quizHistory {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.historyTitle {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--foreground);
+  margin: 0 0 10px;
+}
+
+.quizHistoryCard {
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--background);
+  border: 1px solid var(--border);
+  margin-bottom: 8px;
+}
+
+.quizHistoryQ {
+  font-size: 0.85rem;
+  color: var(--foreground);
+  margin: 0 0 6px;
+  line-height: 1.4;
+}
+
+.quizHistoryMeta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.quizMetaBadge {
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--accent-solid) 10%, transparent);
+  color: var(--accent-solid);
+}
+
+/* ─── Toast ─── */
+.toast {
+  position: fixed;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 12px 24px;
+  border-radius: 12px;
+  background: var(--foreground);
+  color: var(--background);
+  font-size: 0.85rem;
+  font-weight: 600;
+  z-index: 1000;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  animation: toastIn 0.2s ease;
+}
+
+@keyframes toastIn {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+/* ─── Image Attachment ─── */
+.attachBtn {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 12px;
+  color: var(--muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  transition: all 0.2s;
+}
+.attachBtn:hover {
+  border-color: var(--accent-solid);
+  color: var(--accent-solid);
+}
+.hiddenInput {
+  display: none;
+}
+.attachmentPreview {
+  position: relative;
+  display: inline-block;
+  margin-top: 8px;
+}
+.attachmentThumb {
+  width: 80px;
+  height: 80px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+.removeAttachBtn {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #ef4444;
+  color: white;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}

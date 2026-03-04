@@ -179,6 +179,82 @@ export default async function ParentHomePage() {
     .order("created_at", { ascending: false })
     .limit(50);
 
+  // Elite Standard — fetch data for ALL linked players
+  const dayOfWeek = today.getDay();
+  const diffToMon = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+  const weekStart = new Date(today);
+  weekStart.setDate(today.getDate() + diffToMon);
+  const mondayStr = weekStart.toISOString().split("T")[0];
+  const weekEnd = new Date(weekStart);
+  weekEnd.setDate(weekStart.getDate() + 6);
+  const sundayStr = weekEnd.toISOString().split("T")[0];
+  const PHYSICAL_SESSION_TYPES = ["Tec Tac", "Speed Training", "Strength & Conditioning"];
+  const weekStartISO = new Date(mondayStr + "T00:00:00Z").toISOString();
+  const weekEndISO = new Date(sundayStr + "T23:59:59Z").toISOString();
+  const currentYearForAge = new Date().getFullYear();
+
+  const eliteDataByPlayer: {
+    playerId: string;
+    playerName: string;
+    weeklyTotalHours: number;
+    eliteTargetHours: number;
+  }[] = [];
+
+  for (const pid of playerIds) {
+    let minutes = 0;
+    const pName = linkedPlayers[pid]?.firstName || "Player";
+
+    try {
+      const { data: manualLogs } = await (supabase as any)
+        .from("training_logs")
+        .select("duration_minutes")
+        .eq("player_id", pid)
+        .gte("training_date", mondayStr)
+        .lte("training_date", sundayStr);
+      for (const log of manualLogs || []) minutes += log.duration_minutes || 0;
+    } catch { /* */ }
+
+    try {
+      const { count: soloCheckIns } = await (supabase as any)
+        .from("player_solo_session_bookings")
+        .select("id", { count: "exact", head: true })
+        .eq("player_id", pid)
+        .eq("status", "checked-in")
+        .gte("scheduled_date", mondayStr)
+        .lte("scheduled_date", sundayStr);
+      minutes += (soloCheckIns ?? 0) * 30;
+    } catch { /* */ }
+
+    try {
+      const { count: groupCount } = await (supabase as any)
+        .from("points_transactions")
+        .select("id", { count: "exact", head: true })
+        .eq("player_id", pid)
+        .eq("status", "active")
+        .in("session_type", PHYSICAL_SESSION_TYPES)
+        .gte("checked_in_at", weekStartISO)
+        .lte("checked_in_at", weekEndISO);
+      minutes += (groupCount ?? 0) * 60;
+    } catch { /* */ }
+
+    let target = 8;
+    try {
+      const { data: profile } = await (supabase as any)
+        .from("profiles")
+        .select("birth_year")
+        .eq("id", pid)
+        .single();
+      if (profile?.birth_year) target = currentYearForAge - profile.birth_year + 1;
+    } catch { /* */ }
+
+    eliteDataByPlayer.push({
+      playerId: pid,
+      playerName: pName,
+      weeklyTotalHours: parseFloat((minutes / 60).toFixed(1)),
+      eliteTargetHours: target,
+    });
+  }
+
   return (
     <ParentHomeClient
       parentId={parentId}
@@ -192,6 +268,7 @@ export default async function ParentHomePage() {
       leaderboard={leaderboard}
       unreadNotificationCount={unreadCount || 0}
       notifications={(notifications || []) as never[]}
+      eliteDataByPlayer={eliteDataByPlayer}
     />
   );
 }

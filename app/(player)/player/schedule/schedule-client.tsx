@@ -1116,35 +1116,50 @@ export default function PlayerScheduleClient({
 
       const slots = Array.from(slotMap.values());
 
-      // Fetch existing bookings to mark as booked (include player_id to distinguish own bookings)
+      // Fetch ALL booked times via RPC (SECURITY DEFINER — bypasses RLS so we see every player's bookings)
       const supabase = createClient();
       try {
-        let bookingsQuery = supabase
-          .from("individual_session_bookings")
-          .select("booking_time, coach_id, player_id")
-          .eq("individual_session_type_id", sessionTypeData.id)
-          .eq("booking_date", formatDateString(date))
-          .eq("status", "confirmed");
+        const dateStr = formatDateString(date);
+        const coachIdsToCheck = selectedCoachId
+          ? [selectedCoachId]
+          : [...new Set(availabilityRows.map((r) => r.coach_id))];
+
+        const rpcResults = await Promise.all(
+          coachIdsToCheck.map(async (cid) => {
+            const { data } = await (supabase as any).rpc("get_booked_times_for_coach", {
+              p_coach_id: cid,
+              p_date: dateStr,
+            });
+            return ((data ?? []) as { booking_time: string; duration_minutes: number }[]).map(
+              (b) => ({ ...b, coach_id: cid })
+            );
+          })
+        );
+        const allBookings = rpcResults.flat();
+
+        // Also fetch current player's own bookings (RLS returns only theirs) for bookedByMe flag
+        let ownBookingTimes = new Set<string>();
         try {
-          bookingsQuery = bookingsQuery.is("cancelled_at", null);
-        } catch {
-          // column may not exist
-        }
-        if (selectedCoachId) {
-          bookingsQuery = bookingsQuery.eq("coach_id", selectedCoachId);
-        }
+          const { data: ownData } = await supabase
+            .from("individual_session_bookings")
+            .select("booking_time, coach_id")
+            .eq("player_id", currentPlayerId)
+            .eq("booking_date", dateStr)
+            .eq("status", "confirmed");
+          for (const b of (ownData ?? []) as { booking_time: string; coach_id: string }[]) {
+            ownBookingTimes.add(`${b.coach_id}|${b.booking_time}`);
+          }
+        } catch { /* */ }
 
-        const { data: bookings } = await bookingsQuery;
-        const bookingList = (bookings ?? []) as { booking_time: string; coach_id: string; player_id: string }[];
-
-        if (bookingList.length > 0) {
+        if (allBookings.length > 0) {
           const bufferBefore = sessionTypeData.buffer_before_minutes ?? 0;
           const bufferAfter = sessionTypeData.buffer_after_minutes ?? 0;
 
-          for (const booking of bookingList) {
-            const isOwnBooking = booking.player_id === currentPlayerId;
+          for (const booking of allBookings) {
+            const isOwnBooking = ownBookingTimes.has(`${booking.coach_id}|${booking.booking_time}`);
+            const bookingDuration = booking.duration_minutes ?? duration;
             const bookingTime = parseTime(booking.booking_time);
-            const bookingEnd = new Date(bookingTime.getTime() + duration * 60000);
+            const bookingEnd = new Date(bookingTime.getTime() + bookingDuration * 60000);
             const bookingStartWithBuffer = new Date(bookingTime.getTime() - bufferBefore * 60000);
             const bookingEndWithBuffer = new Date(bookingEnd.getTime() + bufferAfter * 60000);
 
@@ -1154,7 +1169,6 @@ export default function PlayerScheduleClient({
 
               if (slotTime < bookingEndWithBuffer && slotEnd > bookingStartWithBuffer) {
                 if (isOwnBooking) {
-                  // Player's own booking — keep the slot visible, flag it
                   if (selectedCoachId || slot.coachId === booking.coach_id) {
                     slot.bookedByMe = true;
                   }
@@ -1170,7 +1184,7 @@ export default function PlayerScheduleClient({
           }
         }
       } catch {
-        // individual_session_bookings table may not exist yet
+        // RPC may not exist yet
       }
       // Apply minimum booking notice
       const noticeHours = sessionTypeData.min_booking_notice_hours ?? 8;

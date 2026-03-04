@@ -436,40 +436,75 @@ export default function HomeClient({
     setLoadingPast(false);
   }
 
+  const POINTS_MAP: Record<string, number> = {
+    "Tec Tac": 6,
+    "Speed Training": 5,
+    "Strength & Conditioning": 5,
+    "Champions Player Progress (CPP)": 10,
+    "Group Film-Analysis": 4,
+    "Free Nutrition Consultation": 7,
+    "Psychologist": 8,
+    "Pro Player Stories (PPS)": 4,
+    "College Advising": 8,
+  };
+
+  async function insertPointsForCheckIn(
+    supabase: ReturnType<typeof createClient>,
+    playerId: string,
+    session: UnifiedSession,
+    reservationId: string,
+    checkedAt: string,
+  ) {
+    const sessionType = session.name;
+    const points = POINTS_MAP[sessionType] || 0;
+    if (points <= 0) return;
+
+    const now = new Date();
+    const quarterNumber = Math.ceil((now.getMonth() + 1) / 3);
+    const quarterYear = now.getFullYear();
+
+    await (supabase as any).from("points_transactions").insert({
+      player_id: playerId,
+      points,
+      session_type: sessionType,
+      session_id: session.id,
+      reservation_id: reservationId,
+      checked_in_by: profileId,
+      checked_in_at: checkedAt,
+      quarter_year: quarterYear,
+      quarter_number: quarterNumber,
+      status: "active",
+    });
+  }
+
   async function handleCheckIn(session: UnifiedSession, player: UnifiedPlayer) {
     setCheckingIn(player.reservationId);
     const supabase = createClient();
+    const checkedAt = new Date().toISOString();
     try {
       if (session.type === "group") {
         const { error } = await supabase
           .from("session_reservations")
-          .update({ reservation_status: "checked-in", checked_in_at: new Date().toISOString(), checked_in_by: profileId })
+          .update({ reservation_status: "checked-in", checked_in_at: checkedAt, checked_in_by: profileId })
           .eq("id", player.reservationId);
         if (error) throw error;
       } else {
         const { error } = await supabase
           .from("individual_session_bookings")
-          .update({ checked_in_at: new Date().toISOString() })
+          .update({ checked_in_at: checkedAt })
           .eq("id", player.reservationId);
         if (error) throw error;
       }
 
       try {
-        // @ts-expect-error - RPC args type not inferred
-        await supabase.rpc("award_points_for_checkin", {
-          p_player_id: player.id,
-          p_session_type: session.name,
-          p_reservation_id: player.reservationId,
-          p_is_individual: session.type === "individual",
-          p_awarded_by: profileId,
-        });
+        await insertPointsForCheckIn(supabase, player.id, session, player.reservationId, checkedAt);
       } catch (err) {
         console.error("Failed to award points:", err);
       }
 
       showToast(`${player.firstName} checked in!`, "success");
       player.status = "checked-in";
-      player.checkedInAt = new Date().toISOString();
+      player.checkedInAt = checkedAt;
       setRefreshKey((k) => k + 1);
     } catch (err: unknown) {
       showToast(err instanceof Error ? err.message : "Check-in failed", "error");
@@ -497,11 +532,12 @@ export default function HomeClient({
       }
 
       try {
-        // @ts-expect-error - RPC args type not inferred
-        await supabase.rpc("remove_points_for_checkin", {
-          p_player_id: player.id,
-          p_reservation_id: player.reservationId,
-        });
+        await (supabase as any)
+          .from("points_transactions")
+          .delete()
+          .eq("reservation_id", player.reservationId)
+          .eq("player_id", player.id)
+          .eq("status", "active");
       } catch (err) {
         console.error("Failed to remove points:", err);
       }
@@ -525,33 +561,27 @@ export default function HomeClient({
     let success = 0;
     for (const player of reserved) {
       try {
+        const checkedAt = new Date().toISOString();
         if (session.type === "group") {
           await supabase.from("session_reservations").update({
             reservation_status: "checked-in",
-            checked_in_at: new Date().toISOString(),
+            checked_in_at: checkedAt,
             checked_in_by: profileId,
           }).eq("id", player.reservationId);
         } else {
           await supabase.from("individual_session_bookings")
-            .update({ checked_in_at: new Date().toISOString() })
+            .update({ checked_in_at: checkedAt })
             .eq("id", player.reservationId);
         }
 
         try {
-          // @ts-expect-error - RPC args type not inferred
-          await supabase.rpc("award_points_for_checkin", {
-            p_player_id: player.id,
-            p_session_type: session.name,
-            p_reservation_id: player.reservationId,
-            p_is_individual: session.type === "individual",
-            p_awarded_by: profileId,
-          });
+          await insertPointsForCheckIn(supabase, player.id, session, player.reservationId, checkedAt);
         } catch (err) {
           console.error("Failed to award points:", err);
         }
 
         player.status = "checked-in";
-        player.checkedInAt = new Date().toISOString();
+        player.checkedInAt = checkedAt;
         success++;
       } catch { /* skip failures */ }
     }

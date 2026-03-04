@@ -219,6 +219,10 @@
   text-transform: capitalize;
 }
 
+.ovalItemCompleted {
+  color: #22c55e;
+}
+
 /* ══════════════════════════════════════════
    Level 1+: Solid expanded sheet
    ══════════════════════════════════════════ */
@@ -473,6 +477,39 @@
 
 .coachingBtn:hover {
   filter: brightness(1.1);
+}
+
+.drillActions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.drillLikeBtn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.15s ease;
+}
+
+.drillLikeBtn:active {
+  transform: scale(1.2);
+}
+
+.drillLikeCount {
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: var(--text-muted, #999);
+  line-height: 1;
 }
 
 /* ══════════════════════════════════════════
@@ -914,163 +951,6 @@
   background: rgba(255, 255, 255, 0.25);
 }
 
-/* ══════════════════════════════════════════
-   Complete Session button + celebration
-   ══════════════════════════════════════════ */
-.completeArea {
-  position: absolute;
-  bottom: calc(env(safe-area-inset-bottom, 0px) + 88px);
-  left: 16px;
-  right: 16px;
-  z-index: 11;
-  display: flex;
-  justify-content: center;
-}
-
-.completeBtn {
-  width: 100%;
-  height: 52px;
-  border: none;
-  border-radius: 16px;
-  background: linear-gradient(135deg, var(--accent-solid, #3b82f6), #60a5fa);
-  color: #fff;
-  font-size: 1rem;
-  font-weight: 700;
-  cursor: pointer;
-  box-shadow: 0 4px 20px rgba(59, 130, 246, 0.4);
-  transition: opacity 0.15s, transform 0.15s;
-}
-
-.completeBtn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 24px rgba(59, 130, 246, 0.5);
-}
-
-.completeBtn:active {
-  transform: scale(0.98);
-}
-
-.completeBtn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  transform: none;
-}
-
-.completedBadge {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  width: 100%;
-  height: 48px;
-  border-radius: 16px;
-  background: rgba(34, 197, 94, 0.15);
-  border: 1.5px solid rgba(34, 197, 94, 0.4);
-  color: #22c55e;
-  font-size: 0.9rem;
-  font-weight: 600;
-}
-
-.completedDate {
-  font-size: 0.75rem;
-  font-weight: 400;
-  opacity: 0.7;
-}
-
-.completionHistory {
-  font-size: 0.75rem;
-  color: var(--muted, #888);
-  text-align: center;
-  margin-bottom: 4px;
-}
-
-/* Celebration overlay */
-.celebrationOverlay {
-  position: fixed;
-  inset: 0;
-  z-index: 1020;
-  background: rgba(0, 0, 0, 0.8);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
-  animation: sdFadeIn 0.25s ease-out;
-}
-
-.celebrationCard {
-  background: var(--surface, #fff);
-  border-radius: 24px;
-  padding: 40px 32px 32px;
-  max-width: 340px;
-  width: 100%;
-  text-align: center;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-  animation: celebCardIn 0.35s ease-out;
-}
-
-@keyframes celebCardIn {
-  from { opacity: 0; transform: scale(0.85) translateY(20px); }
-  to { opacity: 1; transform: scale(1) translateY(0); }
-}
-
-.celebrationIcon {
-  color: #22c55e;
-  margin-bottom: 16px;
-  animation: celebIconPop 0.4s ease-out 0.15s both;
-}
-
-@keyframes celebIconPop {
-  from { opacity: 0; transform: scale(0.3); }
-  60% { transform: scale(1.15); }
-  to { opacity: 1; transform: scale(1); }
-}
-
-.celebrationTitle {
-  font-size: 1.35rem;
-  font-weight: 800;
-  color: var(--foreground, #111);
-  margin: 0 0 8px;
-}
-
-.celebrationPoints {
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: var(--accent-solid, #3b82f6);
-  margin: 0 0 8px;
-}
-
-.celebrationSubtext {
-  font-size: 0.95rem;
-  color: var(--muted, #888);
-  margin: 0 0 8px;
-}
-
-.celebrationHint {
-  font-size: 0.78rem;
-  color: var(--muted, #888);
-  margin: 0 0 24px;
-  line-height: 1.4;
-}
-
-.celebrationDone {
-  width: 100%;
-  height: 48px;
-  border: none;
-  border-radius: 14px;
-  background: var(--foreground, #111);
-  color: var(--background, #fff);
-  font-size: 0.95rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: opacity 0.15s;
-}
-
-.celebrationDone:hover {
-  opacity: 0.85;
-}
-
 /* ── Toast ── */
 .toast {
   position: fixed;
@@ -1116,12 +996,19 @@
     padding: 0;
   }
 
+  .drillActions {
+    flex-direction: row;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+
   .coachingBtn {
-    width: 100%;
+    width: auto;
     height: 40px;
     border-radius: 10px;
     flex-direction: row;
     gap: 6px;
+    padding: 0 12px;
   }
 
   .coachingBtn::after {

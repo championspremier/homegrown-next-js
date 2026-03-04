@@ -1,0 +1,261 @@
+/* ─── Bell button ─── */
+.bellBtn {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--foreground);
+  transition: background 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.bellBtn:hover {
+  background: color-mix(in srgb, var(--foreground) 8%, transparent);
+}
+
+/* ─── Badge ─── */
+.badge {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 50%;
+  background: #ef4444;
+  color: white;
+  font-size: 11px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  pointer-events: none;
+}
+
+/* ─── Overlay ─── */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 2000;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  animation: fadeIn 0.15s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* ─── Sheet (mobile bottom sheet, desktop centered panel) ─── */
+.sheet {
+  width: 100%;
+  max-width: 480px;
+  max-height: 70vh;
+  background: var(--surface, var(--background));
+  border-radius: 16px 16px 0 0;
+  display: flex;
+  flex-direction: column;
+  animation: slideUp 0.25s ease;
+  overflow: hidden;
+}
+
+@media (min-width: 769px) {
+  .overlay {
+    align-items: center;
+  }
+  .sheet {
+    border-radius: 16px;
+    max-height: 60vh;
+  }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(30px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+/* ─── Handle (mobile drag indicator) ─── */
+.handle {
+  width: 36px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--border);
+  margin: 8px auto 0;
+}
+
+@media (min-width: 769px) {
+  .handle { display: none; }
+}
+
+/* ─── Header ─── */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--foreground);
+  margin: 0;
+}
+
+.headerRight {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.markAllBtn {
+  padding: 4px 10px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--accent-solid, #3b82f6);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.markAllBtn:hover {
+  background: color-mix(in srgb, var(--accent-solid, #3b82f6) 10%, transparent);
+}
+
+.closeBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.closeBtn:hover {
+  background: color-mix(in srgb, var(--foreground) 8%, transparent);
+}
+
+/* ─── List ─── */
+.list {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ─── Empty state ─── */
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 48px 20px;
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+.empty p {
+  margin: 0;
+}
+
+/* ─── Notification item ─── */
+.item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.item:hover {
+  background: color-mix(in srgb, var(--foreground) 3%, transparent);
+}
+
+.item:last-child {
+  border-bottom: none;
+}
+
+.itemUnread {
+  background: color-mix(in srgb, var(--accent-solid, #3b82f6) 5%, transparent);
+}
+
+.itemUnread .itemTitle {
+  font-weight: 700;
+}
+
+/* ─── Icon ─── */
+.icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--foreground) 6%, transparent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--muted);
+}
+
+.iconRed { color: #ef4444; background: rgba(239, 68, 68, 0.1); }
+.iconGreen { color: #10b981; background: rgba(16, 185, 129, 0.1); }
+.iconBlue { color: #3b82f6; background: rgba(59, 130, 246, 0.1); }
+.iconAccent { color: var(--accent-solid, #3b82f6); background: color-mix(in srgb, var(--accent-solid, #3b82f6) 10%, transparent); }
+
+/* ─── Content ─── */
+.content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.itemTitle {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--foreground);
+}
+
+.message {
+  font-size: 0.8rem;
+  color: var(--muted);
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.date {
+  font-size: 0.7rem;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+/* ─── Unread dot ─── */
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent-solid, #3b82f6);
+  flex-shrink: 0;
+  margin-top: 6px;
+}

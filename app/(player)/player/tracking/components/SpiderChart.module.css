@@ -1,0 +1,47 @@
+.svg {
+  width: 100%;
+  max-width: 300px;
+  height: auto;
+  display: block;
+  margin: 0 auto;
+  overflow: visible;
+}
+
+.ring {
+  fill: none;
+  stroke: var(--border);
+  stroke-width: 0.5;
+}
+
+.axisLine {
+  stroke: var(--border);
+  stroke-width: 1;
+}
+
+.axisLineCoach {
+  opacity: 0.3;
+}
+
+.dataPolygon {
+  fill: color-mix(in srgb, var(--accent-solid, #3b82f6) 35%, transparent);
+  stroke: var(--accent-solid, #3b82f6);
+  stroke-width: 2;
+  stroke-linejoin: round;
+  transition: all 0.3s ease;
+}
+
+.dataDot {
+  fill: var(--accent-solid, #3b82f6);
+  transition: all 0.3s ease;
+}
+
+.label {
+  fill: var(--foreground);
+  font-size: 9px;
+  font-weight: 600;
+}
+
+.labelCoach {
+  fill: var(--muted);
+  opacity: 0.5;
+}

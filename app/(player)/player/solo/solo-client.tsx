@@ -18,10 +18,12 @@ import {
   MENTAL_SKILLS,
   formatLabel,
   getPrimaryTechnicalSkills,
+  getDefaultPhysicalSeason,
 } from "@/lib/curriculum";
 import { getPeriodLabel } from "@/lib/curriculum-period";
 import VideoReel, { type ReelVideo, type ReelSession } from "./components/VideoReel";
 import SessionDetail from "./components/SessionDetail";
+import TrainingTab, { type ExerciseLibraryItem, type TrainingLog } from "./components/TrainingTab";
 import styles from "./solo.module.css";
 
 /* ── Interfaces ── */
@@ -87,9 +89,14 @@ interface Props {
   videos: SoloVideo[];
   thumbnails: SkillThumbnail[];
   currentPeriod: string;
+  likedVideoIds: string[];
+  exerciseLibrary: ExerciseLibraryItem[];
+  recentTrainingLogs: TrainingLog[];
+  weeklyHgMinutes: number;
+  eliteTargetHours: number;
 }
 
-type Tab = "start-here" | "technical" | "physical" | "mental" | "tactical";
+type Tab = "start-here" | "technical" | "physical" | "mental" | "tactical" | "training";
 
 interface NavState {
   tab: Tab;
@@ -99,7 +106,7 @@ interface NavState {
   physicalSeason: string;
 }
 
-const TAB_ORDER: Tab[] = ["start-here", "technical", "physical", "mental", "tactical"];
+const TAB_ORDER: Tab[] = ["start-here", "technical", "physical", "mental", "tactical", "training"];
 
 const TAB_LABELS: Record<Tab, string> = {
   "start-here": "Start Here",
@@ -107,6 +114,7 @@ const TAB_LABELS: Record<Tab, string> = {
   physical: "Physical",
   mental: "Mental",
   tactical: "Tactical",
+  training: "Log",
 };
 
 const CATEGORY_GRADIENTS: Record<string, string> = {
@@ -143,13 +151,13 @@ function calculateDuration(session: SoloSession): number {
   return Math.max(1, Math.ceil(totalSeconds / 60));
 }
 
-export default function SoloClient({ playerId, sessions, videos, thumbnails, currentPeriod }: Props) {
+export default function SoloClient({ playerId, sessions, videos, thumbnails, currentPeriod, likedVideoIds, exerciseLibrary, recentTrainingLogs, weeklyHgMinutes, eliteTargetHours }: Props) {
   const [nav, setNav] = useState<NavState>({
     tab: "start-here",
     skill: null,
     subSkill: null,
     sessionId: null,
-    physicalSeason: "in-season",
+    physicalSeason: getDefaultPhysicalSeason(),
   });
 
   const [loading, setLoading] = useState(false);
@@ -168,13 +176,22 @@ export default function SoloClient({ playerId, sessions, videos, thumbnails, cur
   const activeCategory = nav.tab === "start-here" ? null : nav.tab;
   const isReelTab = nav.tab === "start-here" || nav.tab === "tactical";
 
-  const sessionsForTab = useMemo(
-    () =>
-      activeCategory
-        ? sessions.filter((s) => s.category === activeCategory && s.period === currentPeriod)
-        : [],
-    [sessions, activeCategory, currentPeriod]
-  );
+  const sessionsForTab = useMemo(() => {
+    if (!activeCategory) return [];
+    if (activeCategory === "physical") {
+      return sessions.filter(
+        (s) =>
+          s.category === "physical" &&
+          (s.period === nav.physicalSeason || s.period === "all")
+      );
+    }
+    if (activeCategory === "mental") {
+      return sessions.filter((s) => s.category === "mental");
+    }
+    return sessions.filter(
+      (s) => s.category === activeCategory && s.period === currentPeriod
+    );
+  }, [sessions, activeCategory, currentPeriod, nav.physicalSeason]);
 
   const technicalSkills = useMemo(
     () => getPrimaryTechnicalSkills(currentPeriod),
@@ -414,10 +431,10 @@ export default function SoloClient({ playerId, sessions, videos, thumbnails, cur
           {["in-season", "off-season"].map((s) => (
             <button
               key={s}
-              className={`${styles.seasonBtn} ${nav.physicalSeason === s ? styles.seasonBtnActive : ""}`}
-              onClick={() => navigateTo({ physicalSeason: s })}
+              className={`${styles.seasonCard} ${nav.physicalSeason === s ? styles.seasonCardActive : styles.seasonCardInactive}`}
+              onClick={() => navigateTo({ physicalSeason: s, skill: null, subSkill: null, sessionId: null })}
             >
-              {formatLabel(s)}
+              {s === "in-season" ? "In-Season" : "Off-Season"}
             </button>
           ))}
         </div>
@@ -545,6 +562,7 @@ export default function SoloClient({ playerId, sessions, videos, thumbnails, cur
           mode="start-here"
           period={currentPeriod}
           playerId={playerId}
+          likedVideoIds={likedVideoIds}
           onGoToSession={(id) => {
             const s = sessions.find((x) => x.id === id);
             if (s) {
@@ -564,7 +582,20 @@ export default function SoloClient({ playerId, sessions, videos, thumbnails, cur
           mode="tactical"
           period={currentPeriod}
           playerId={playerId}
+          likedVideoIds={likedVideoIds}
           onGoToSession={(id) => navigateTo({ sessionId: id })}
+        />
+      );
+    }
+
+    if (nav.tab === "training") {
+      return (
+        <TrainingTab
+          exerciseLibrary={exerciseLibrary}
+          recentTrainingLogs={recentTrainingLogs as TrainingLog[]}
+          playerId={playerId}
+          weeklyHgMinutes={weeklyHgMinutes}
+          eliteTargetHours={eliteTargetHours}
         />
       );
     }
@@ -631,6 +662,7 @@ export default function SoloClient({ playerId, sessions, videos, thumbnails, cur
           session={selectedSession}
           onBack={() => navigateTo({ sessionId: null })}
           playerId={playerId}
+          likedVideoIds={likedVideoIds}
         />
       )}
     </>

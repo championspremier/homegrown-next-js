@@ -1,14 +1,14 @@
 "use client";
 
 import { useState, useMemo, useCallback, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import {
-  ChevronLeft, ChevronRight, MapPin, Video, User,
-  X, Bell, BellOff, Ban, AlarmClock, CalendarCheck, Info, Tag, Users,
+  ChevronLeft, ChevronRight, MapPin, Video, User, Users,
 } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
 import { cancelReservation } from "@/app/actions/schedule";
 import { useToast } from "@/components/ui/Toast";
+import NotificationBell from "@/components/notifications/NotificationBell";
 import styles from "./home.module.css";
 
 /* ─── Types ─── */
@@ -118,6 +118,12 @@ interface Props {
   leaderboard: LeaderboardPlayer[];
   unreadNotificationCount: number;
   notifications: Notification[];
+  eliteDataByPlayer: {
+    playerId: string;
+    playerName: string;
+    weeklyTotalHours: number;
+    eliteTargetHours: number;
+  }[];
 }
 
 /* ─── Helpers ─── */
@@ -155,32 +161,6 @@ function formatDateString(date: Date): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 }
 
-function getNotifIcon(type: string) {
-  const icons: Record<string, React.ReactNode> = {
-    cancellation: <Ban size={20} />,
-    time_change: <AlarmClock size={20} />,
-    popup_session: <CalendarCheck size={20} />,
-    information: <Info size={20} />,
-    veo_link: <Video size={20} />,
-    merch: <Tag size={20} />,
-    announcement: <Info size={20} />,
-  };
-  return icons[type] || <Bell size={20} />;
-}
-
-function getNotifTitle(type: string, fallback?: string | null) {
-  const titles: Record<string, string> = {
-    information: "Information",
-    time_change: "Time Change",
-    cancellation: "Cancellation",
-    popup_session: "Additional Session",
-    veo_link: "Veo Link",
-    merch: "Merch",
-    announcement: "Information",
-  };
-  return titles[type] || fallback || "Notification";
-}
-
 /* ─── Component ─── */
 
 export default function ParentHomeClient({
@@ -194,14 +174,14 @@ export default function ParentHomeClient({
   leaderboard,
   unreadNotificationCount,
   notifications: initialNotifications,
+  eliteDataByPlayer,
 }: Props) {
   const { showToast } = useToast();
   const router = useRouter();
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const [activeTab, setActiveTab] = useState<"schedule" | "reservations">("schedule");
-  const [notifOpen, setNotifOpen] = useState(false);
-  const [notifList, setNotifList] = useState<Notification[]>(initialNotifications);
+  const [bellPortalTarget, setBellPortalTarget] = useState<HTMLElement | null>(null);
   const [cancelTarget, setCancelTarget] = useState<CancelTarget | null>(null);
   const [cancelling, setCancelling] = useState(false);
 
@@ -210,10 +190,7 @@ export default function ParentHomeClient({
   const [selectedDate, setSelectedDate] = useState<Date>(() => new Date(today));
 
   const selectedDateStr = formatDateString(selectedDate);
-  const unreadCount = notifList.filter((n) => !n.is_read).length;
 
-  // suppress unused var — parentId is used for notification queries
-  void parentId;
   void unreadNotificationCount;
 
   /* ─── Restyle layout topbar as Homegrown header ─── */
@@ -269,51 +246,14 @@ export default function ParentHomeClient({
     const rightGroup = document.createElement("div");
     rightGroup.style.cssText = "display: flex; align-items: center; gap: 8px;";
 
-    const bellBtn = document.createElement("button");
-    bellBtn.type = "button";
-    bellBtn.id = "homeBellBtn";
-    bellBtn.style.cssText = `
-      position: relative; width: 40px; height: 40px; border-radius: 50%;
-      background: transparent; border: none; cursor: pointer;
-      display: flex; align-items: center; justify-content: center;
-      color: var(--foreground); transition: background 0.15s;
-    `;
-    bellBtn.innerHTML = `
-      <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M10.268 21a2 2 0 0 0 3.464 0"></path>
-        <path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"></path>
-      </svg>
-    `;
-    rightGroup.appendChild(bellBtn);
+    const bellSlot = document.createElement("div");
+    bellSlot.style.cssText = "display: contents;";
+    rightGroup.appendChild(bellSlot);
+    setBellPortalTarget(bellSlot);
 
     topbar.appendChild(leftSpacer);
     topbar.appendChild(toggleBtn);
     topbar.appendChild(rightGroup);
-
-    const updateBadge = () => {
-      const existing = bellBtn.querySelector("span");
-      if (existing) existing.remove();
-      const count = unreadCount;
-      if (count > 0) {
-        const badge = document.createElement("span");
-        badge.style.cssText = `
-          position: absolute; top: 2px; right: 2px;
-          min-width: 18px; height: 18px; padding: 0 5px;
-          border-radius: 50%; background: #ef4444; color: white;
-          font-size: 11px; font-weight: 600;
-          display: flex; align-items: center; justify-content: center;
-          line-height: 1;
-        `;
-        badge.textContent = count > 99 ? "99+" : String(count);
-        bellBtn.appendChild(badge);
-      }
-    };
-    updateBadge();
-
-    const handleBellClick = () => {
-      setNotifOpen((prev) => !prev);
-    };
-    bellBtn.addEventListener("click", handleBellClick);
 
     const dropdown = document.createElement("div");
     dropdown.id = "homegrownSwitcherDropdown";
@@ -381,8 +321,8 @@ export default function ParentHomeClient({
     document.addEventListener("click", handleClickOutside);
 
     return () => {
+      setBellPortalTarget(null);
       document.removeEventListener("click", handleClickOutside);
-      bellBtn.removeEventListener("click", handleBellClick);
 
       if (existingForm) {
         existingForm.style.cssText = "";
@@ -412,20 +352,6 @@ export default function ParentHomeClient({
       topbar.className = originalClassName;
       topbar.style.cssText = originalStyle;
     };
-  }, [unreadCount]);
-
-  /* ─── Notifications ─── */
-
-  const markAsRead = useCallback(async (notifId: string) => {
-    const supabase = createClient();
-    await supabase
-      .from("notifications")
-      .update({ is_read: true, read_at: new Date().toISOString() })
-      .eq("id", notifId);
-
-    setNotifList((prev) =>
-      prev.map((n) => (n.id === notifId ? { ...n, is_read: true } : n))
-    );
   }, []);
 
   /* ─── Build unified session list (grouped by session for group sessions) ─── */
@@ -803,6 +729,11 @@ export default function ParentHomeClient({
         )}
       </div>
 
+      {/* ─── Elite Standard KPI — widget carousel ─── */}
+      {eliteDataByPlayer.length > 0 && (
+        <EliteCarousel eliteDataByPlayer={eliteDataByPlayer} />
+      )}
+
       {/* ─── Cancel Modal ─── */}
       {cancelTarget && (
         <div className={styles.modalOverlay} onClick={() => !cancelling && setCancelTarget(null)}>
@@ -899,55 +830,129 @@ export default function ParentHomeClient({
         </div>
       )}
 
-      {/* ─── Notification Bottom Sheet ─── */}
-      {notifOpen && (
-        <div className={styles.notifOverlay} onClick={() => setNotifOpen(false)}>
-          <div className={styles.notifSheet} onClick={(e) => e.stopPropagation()}>
-            <div className={styles.notifHandle} />
-            <div className={styles.notifHeader}>
-              <h3 className={styles.notifTitle}>Notifications</h3>
-              <button type="button" className={styles.notifClose} onClick={() => setNotifOpen(false)}>
-                <X size={18} />
-              </button>
-            </div>
-            <div className={styles.notifList}>
-              {notifList.length === 0 ? (
-                <div className={styles.notifEmpty}>
-                  <BellOff size={40} style={{ opacity: 0.4 }} />
-                  <p>No notifications yet</p>
+      {/* ─── Notification Bell (portaled into topbar) ─── */}
+      {bellPortalTarget &&
+        createPortal(
+          <NotificationBell
+            userId={parentId}
+            role="parent"
+            linkedPlayerIds={Object.keys(linkedPlayers)}
+            initialNotifications={initialNotifications}
+          />,
+          bellPortalTarget
+        )}
+    </div>
+  );
+}
+
+/* ─── Elite Carousel sub-component ─── */
+
+interface ElitePlayer {
+  playerId: string;
+  playerName: string;
+  weeklyTotalHours: number;
+  eliteTargetHours: number;
+}
+
+function EliteCarousel({ eliteDataByPlayer }: { eliteDataByPlayer: ElitePlayer[] }) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const isMultiple = eliteDataByPlayer.length > 1;
+
+  const applyScaleEffects = useCallback(() => {
+    const container = scrollRef.current;
+    if (!container || !isMultiple) return;
+
+    const containerRect = container.getBoundingClientRect();
+    const centerY = containerRect.top + containerRect.height / 2;
+    let closestIdx = 0;
+    let closestDist = Infinity;
+
+    cardRefs.current.forEach((card, i) => {
+      if (!card) return;
+      const cardRect = card.getBoundingClientRect();
+      const cardCenterY = cardRect.top + cardRect.height / 2;
+      const dist = Math.abs(cardCenterY - centerY);
+      const maxDist = containerRect.height / 2;
+      const ratio = Math.min(dist / maxDist, 1);
+
+      const scale = 1 - ratio * 0.08;
+      const opacity = 1 - ratio * 0.35;
+      card.style.transform = `scale(${scale})`;
+      card.style.opacity = String(opacity);
+
+      if (dist < closestDist) {
+        closestDist = dist;
+        closestIdx = i;
+      }
+    });
+
+    setActiveIndex(closestIdx);
+  }, [isMultiple]);
+
+  useEffect(() => {
+    const container = scrollRef.current;
+    if (!container || !isMultiple) return;
+
+    applyScaleEffects();
+    container.addEventListener("scroll", applyScaleEffects, { passive: true });
+    return () => container.removeEventListener("scroll", applyScaleEffects);
+  }, [applyScaleEffects, isMultiple]);
+
+  const scrollToCard = useCallback((index: number) => {
+    const card = cardRefs.current[index];
+    if (card) {
+      card.scrollIntoView({ behavior: "smooth", block: "center", inline: "nearest" });
+    }
+  }, []);
+
+  return (
+    <div className={`${styles.eliteWrapper} ${isMultiple ? "" : styles.eliteWrapperSingle}`}>
+      <div
+        ref={scrollRef}
+        className={`${styles.eliteScroll} ${isMultiple ? styles.eliteScrollMultiple : ""}`}
+      >
+        {eliteDataByPlayer.map((player, i) => {
+          const pct = player.eliteTargetHours > 0 ? (player.weeklyTotalHours / player.eliteTargetHours) * 100 : 0;
+          const barColor = pct >= 80 ? "#22c55e" : pct >= 50 ? "#eab308" : "#ef4444";
+          return (
+            <div
+              key={player.playerId}
+              ref={(el) => { cardRefs.current[i] = el; }}
+              className={styles.eliteCard}
+            >
+              <div className={styles.eliteCardHeader}>
+                <div className={styles.eliteCardLabels}>
+                  <span className={styles.eliteCardName}>{player.playerName}</span>
+                  <span className={styles.eliteCardLabel}>Elite Standard</span>
                 </div>
-              ) : (
-                notifList.map((notif) => (
-                  <div
-                    key={notif.id}
-                    className={`${styles.notifItem} ${!notif.is_read ? styles.notifItemUnread : ""}`}
-                    onClick={() => markAsRead(notif.id)}
-                  >
-                    <div className={styles.notifIcon}>
-                      {getNotifIcon(notif.notification_type)}
-                    </div>
-                    <div className={styles.notifContent}>
-                      <span className={styles.notifItemTitle}>
-                        {getNotifTitle(notif.notification_type, notif.title)}
-                      </span>
-                      {notif.message && (
-                        <span className={styles.notifMessage}>{notif.message}</span>
-                      )}
-                      <span className={styles.notifDate}>
-                        {new Date(notif.created_at).toLocaleDateString("en-US", {
-                          month: "short",
-                          day: "numeric",
-                          hour: "numeric",
-                          minute: "2-digit",
-                        })}
-                      </span>
-                    </div>
-                    {!notif.is_read && <div className={styles.notifDot} />}
-                  </div>
-                ))
-              )}
+                <span className={styles.eliteCardHours}>
+                  <span className={styles.eliteHoursValue}>{player.weeklyTotalHours}</span>
+                  <span className={styles.eliteHoursTarget}> / {player.eliteTargetHours} hrs</span>
+                </span>
+              </div>
+              <div className={styles.eliteBarTrack}>
+                <div
+                  className={styles.eliteBarFill}
+                  style={{ width: `${Math.min(100, pct)}%`, backgroundColor: barColor }}
+                />
+              </div>
             </div>
-          </div>
+          );
+        })}
+      </div>
+      {isMultiple && (
+        <div className={styles.eliteDots}>
+          {eliteDataByPlayer.map((_, i) => (
+            <button
+              key={eliteDataByPlayer[i].playerId}
+              type="button"
+              className={`${styles.eliteDot} ${i === activeIndex ? styles.eliteDotActive : ""}`}
+              onClick={() => scrollToCard(i)}
+              aria-label={`View ${eliteDataByPlayer[i].playerName}'s stats`}
+            />
+          ))}
         </div>
       )}
     </div>

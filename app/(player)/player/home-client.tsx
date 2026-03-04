@@ -1,14 +1,16 @@
 "use client";
 
 import { useState, useMemo, useCallback, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import {
   ChevronLeft, ChevronRight, MapPin, Video, User, Target, HelpCircle,
-  X, Bell, BellOff, Ban, AlarmClock, CalendarCheck, Info, Tag,
+  Check, X,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { cancelReservation } from "@/app/actions/schedule";
 import { useToast } from "@/components/ui/Toast";
+import NotificationBell from "@/components/notifications/NotificationBell";
 import styles from "./home.module.css";
 
 /* ─── Types ─── */
@@ -58,6 +60,27 @@ interface Objectives {
   out_of_possession_objective: string | null;
   created_at: string;
   coach_id: string | null;
+}
+
+interface QuizAssignment {
+  id: string;
+  status: string;
+  quiz_question_id: string;
+  quiz_questions: {
+    id: string;
+    question: string;
+    options: string[];
+    period: string | null;
+    category: string | null;
+  } | null;
+}
+
+interface ActiveObjective {
+  id: string;
+  in_possession_objective: string | null;
+  out_of_possession_objective: string | null;
+  created_at: string;
+  coach: { first_name: string; last_name: string } | null;
 }
 
 interface Notification {
@@ -137,6 +160,10 @@ interface Props {
   notifications: Notification[];
   leaderboard: LeaderboardPlayer[];
   soloBookings: SoloBooking[];
+  weeklyTotalHours: number;
+  eliteTargetHours: number;
+  quizAssignments: QuizAssignment[];
+  activeObjectives: ActiveObjective | null;
 }
 
 /* ─── Helpers ─── */
@@ -207,32 +234,6 @@ function getCurrentFocus(): string {
   return "BUILD-OUT";
 }
 
-function getNotifIcon(type: string) {
-  const icons: Record<string, React.ReactNode> = {
-    cancellation: <Ban size={20} />,
-    time_change: <AlarmClock size={20} />,
-    popup_session: <CalendarCheck size={20} />,
-    information: <Info size={20} />,
-    veo_link: <Video size={20} />,
-    merch: <Tag size={20} />,
-    announcement: <Info size={20} />,
-  };
-  return icons[type] || <Bell size={20} />;
-}
-
-function getNotifTitle(type: string, fallback?: string | null) {
-  const titles: Record<string, string> = {
-    information: "Information",
-    time_change: "Time Change",
-    cancellation: "Cancellation",
-    popup_session: "Additional Session",
-    veo_link: "Veo Link",
-    merch: "Merch",
-    announcement: "Information",
-  };
-  return titles[type] || fallback || "Notification";
-}
-
 /* ─── Component ─── */
 
 export default function PlayerHomeClient({
@@ -247,15 +248,37 @@ export default function PlayerHomeClient({
   notifications: initialNotifications,
   leaderboard,
   soloBookings,
+  weeklyTotalHours,
+  eliteTargetHours,
+  quizAssignments,
+  activeObjectives,
 }: Props) {
   const { showToast } = useToast();
   const router = useRouter();
   const scrollRef = useRef<HTMLDivElement>(null);
+  void unreadNotificationCount;
+  void objectives;
 
   const [activeTab, setActiveTab] = useState<"schedule" | "reservations">("schedule");
   const [bottomTab, setBottomTab] = useState<"objectives" | "quiz">("objectives");
-  const [notifOpen, setNotifOpen] = useState(false);
-  const [notifList, setNotifList] = useState<Notification[]>(initialNotifications);
+  const dedupeQuizzes = (assignments: QuizAssignment[]) => {
+    const seen = new Set<string>();
+    return (assignments || []).filter((a) => {
+      if (!a.quiz_questions || seen.has(a.quiz_question_id)) return false;
+      seen.add(a.quiz_question_id);
+      return true;
+    });
+  };
+  const [quizList, setQuizList] = useState<QuizAssignment[]>(() => dedupeQuizzes(quizAssignments));
+  const [answeredQuiz, setAnsweredQuiz] = useState<Record<string, { selected: number; correct: number; isCorrect: boolean; points: number }>>({});
+  const [answeringId, setAnsweringId] = useState<string | null>(null);
+
+  useEffect(() => {
+    setQuizList(dedupeQuizzes(quizAssignments));
+    setAnsweredQuiz({});
+    setAnsweringId(null);
+  }, [quizAssignments]);
+  const [bellPortalTarget, setBellPortalTarget] = useState<HTMLElement | null>(null);
   const [cancelTarget, setCancelTarget] = useState<UnifiedSession | null>(null);
   const [cancelling, setCancelling] = useState(false);
 
@@ -265,7 +288,6 @@ export default function PlayerHomeClient({
 
   const selectedDateStr = formatDateString(selectedDate);
   const currentFocus = getCurrentFocus();
-  const unreadCount = notifList.filter((n) => !n.is_read).length;
 
   /* ─── Restyle layout topbar as Homegrown header ─── */
 
@@ -320,53 +342,14 @@ export default function PlayerHomeClient({
     const rightGroup = document.createElement("div");
     rightGroup.style.cssText = "display: flex; align-items: center; gap: 8px;";
 
-    const bellBtn = document.createElement("button");
-    bellBtn.type = "button";
-    bellBtn.id = "homeBellBtn";
-    bellBtn.style.cssText = `
-      position: relative; width: 40px; height: 40px; border-radius: 50%;
-      background: transparent; border: none; cursor: pointer;
-      display: flex; align-items: center; justify-content: center;
-      color: var(--foreground); transition: background 0.15s;
-    `;
-    bellBtn.innerHTML = `
-      <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M10.268 21a2 2 0 0 0 3.464 0"></path>
-        <path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"></path>
-      </svg>
-    `;
-    rightGroup.appendChild(bellBtn);
+    const bellSlot = document.createElement("div");
+    bellSlot.style.cssText = "display: contents;";
+    rightGroup.appendChild(bellSlot);
+    setBellPortalTarget(bellSlot);
 
     topbar.appendChild(leftSpacer);
     topbar.appendChild(toggleBtn);
     topbar.appendChild(rightGroup);
-
-    // Bell badge (managed via DOM so it updates with notif count)
-    const updateBadge = () => {
-      const existing = bellBtn.querySelector("span");
-      if (existing) existing.remove();
-      const count = unreadCount;
-      if (count > 0) {
-        const badge = document.createElement("span");
-        badge.style.cssText = `
-          position: absolute; top: 2px; right: 2px;
-          min-width: 18px; height: 18px; padding: 0 5px;
-          border-radius: 50%; background: #ef4444; color: white;
-          font-size: 11px; font-weight: 600;
-          display: flex; align-items: center; justify-content: center;
-          line-height: 1;
-        `;
-        badge.textContent = count > 99 ? "99+" : String(count);
-        bellBtn.appendChild(badge);
-      }
-    };
-    updateBadge();
-
-    // Bell opens notification sheet
-    const handleBellClick = () => {
-      setNotifOpen((prev) => !prev);
-    };
-    bellBtn.addEventListener("click", handleBellClick);
 
     // Dropdown for account switcher
     const dropdown = document.createElement("div");
@@ -435,8 +418,8 @@ export default function PlayerHomeClient({
     document.addEventListener("click", handleClickOutside);
 
     return () => {
+      setBellPortalTarget(null);
       document.removeEventListener("click", handleClickOutside);
-      bellBtn.removeEventListener("click", handleBellClick);
 
       if (existingForm) {
         existingForm.style.cssText = "";
@@ -466,24 +449,7 @@ export default function PlayerHomeClient({
       topbar.className = originalClassName;
       topbar.style.cssText = originalStyle;
     };
-  }, [unreadCount]);
-
-  /* ─── Notifications ─── */
-
-  const markAsRead = useCallback(
-    async (notifId: string) => {
-      const supabase = createClient();
-      await supabase
-        .from("notifications")
-        .update({ is_read: true, read_at: new Date().toISOString() })
-        .eq("id", notifId);
-
-      setNotifList((prev) =>
-        prev.map((n) => (n.id === notifId ? { ...n, is_read: true } : n))
-      );
-    },
-    []
-  );
+  }, []);
 
   /* ─── Build unified session list ─── */
 
@@ -673,6 +639,67 @@ export default function PlayerHomeClient({
       setCancelTarget(null);
     }
   }, [cancelTarget, cancelling, playerId, showToast, router]);
+
+  /* ─── Quiz answering ─── */
+
+  const handleAnswerQuiz = useCallback(
+    async (assignmentId: string, selectedIndex: number) => {
+      if (answeringId) return;
+      setAnsweringId(assignmentId);
+
+      try {
+        const supabase = createClient();
+        const { data, error } = await (supabase as any).rpc("submit_quiz_answer", {
+          p_assignment_id: assignmentId,
+          p_selected_answer: selectedIndex,
+        });
+
+        if (error) {
+          showToast("Failed to submit answer", "error");
+          setAnsweringId(null);
+          return;
+        }
+
+        const result = data as { ok?: boolean; error?: string; is_correct?: boolean; points_awarded?: number; correct_answer?: number };
+
+        if (!result?.ok) {
+          if (result?.error === "already_answered") showToast("Already answered this quiz", "error");
+          else if (result?.error === "rate_limit") showToast("Max 15 quiz answers per day", "error");
+          else showToast("Failed to submit answer", "error");
+          setAnsweringId(null);
+          return;
+        }
+
+        const isCorrect = !!result.is_correct;
+        const pointsAwarded = result.points_awarded ?? 0;
+        const correctIdx = result.correct_answer ?? -1;
+
+        setAnsweredQuiz((prev) => ({
+          ...prev,
+          [assignmentId]: { selected: selectedIndex, correct: correctIdx, isCorrect, points: pointsAwarded },
+        }));
+
+        showToast(
+          isCorrect ? `Correct! +${pointsAwarded} pt${pointsAwarded !== 1 ? "s" : ""}` : "Incorrect",
+          isCorrect ? "success" : "error"
+        );
+
+        setTimeout(() => {
+          setQuizList((prev) => prev.filter((q) => q.id !== assignmentId));
+          setAnsweredQuiz((prev) => {
+            const next = { ...prev };
+            delete next[assignmentId];
+            return next;
+          });
+          setAnsweringId(null);
+        }, 3000);
+      } catch {
+        showToast("Failed to submit answer", "error");
+        setAnsweringId(null);
+      }
+    },
+    [answeringId, showToast]
+  );
 
   /* ─── Render ─── */
 
@@ -874,6 +901,29 @@ export default function PlayerHomeClient({
         )}
       </div>
 
+      {/* ─── Elite Standard KPI ─── */}
+      {(() => {
+        const pct = eliteTargetHours > 0 ? (weeklyTotalHours / eliteTargetHours) * 100 : 0;
+        const barColor = pct >= 80 ? "#22c55e" : pct >= 50 ? "#eab308" : "#ef4444";
+        return (
+          <div className={styles.eliteCard}>
+            <div className={styles.eliteCardHeader}>
+              <span className={styles.eliteCardLabel}>Elite Standard</span>
+              <span className={styles.eliteCardHours}>
+                <span className={styles.eliteHoursValue}>{weeklyTotalHours}</span>
+                <span className={styles.eliteHoursTarget}> / {eliteTargetHours} hrs this week</span>
+              </span>
+            </div>
+            <div className={styles.eliteBarTrack}>
+              <div
+                className={styles.eliteBarFill}
+                style={{ width: `${Math.min(100, pct)}%`, backgroundColor: barColor }}
+              />
+            </div>
+          </div>
+        );
+      })()}
+
       {/* ─── Bottom Section: Objectives / Quiz ─── */}
       <div className={styles.bottomSection}>
         <div className={styles.bottomTabs}>
@@ -901,32 +951,102 @@ export default function PlayerHomeClient({
               <span className={styles.focusLabel}>CURRENT FOCUS</span>
               <span className={styles.focusText}>{currentFocus}</span>
             </div>
-            {objectives ? (
+            {activeObjectives ? (
               <div className={styles.objectivesList}>
-                {objectives.in_possession_objective && (
+                {activeObjectives.in_possession_objective && (
                   <div className={styles.objectiveItem}>
                     <span className={styles.objectiveTag}>In Possession</span>
-                    <p className={styles.objectiveText}>{objectives.in_possession_objective}</p>
+                    <p className={styles.objectiveText}>{activeObjectives.in_possession_objective}</p>
                   </div>
                 )}
-                {objectives.out_of_possession_objective && (
+                {activeObjectives.out_of_possession_objective && (
                   <div className={styles.objectiveItem}>
                     <span className={styles.objectiveTag}>Out of Possession</span>
-                    <p className={styles.objectiveText}>{objectives.out_of_possession_objective}</p>
+                    <p className={styles.objectiveText}>{activeObjectives.out_of_possession_objective}</p>
                   </div>
                 )}
-                {!objectives.in_possession_objective && !objectives.out_of_possession_objective && (
+                {!activeObjectives.in_possession_objective && !activeObjectives.out_of_possession_objective && (
                   <p className={styles.objectivesEmpty}>No objectives set yet</p>
                 )}
+                <span className={styles.objectiveMeta}>
+                  {activeObjectives.coach
+                    ? `From: ${activeObjectives.coach.first_name} ${activeObjectives.coach.last_name}`
+                    : ""}
+                  {activeObjectives.coach ? " · " : ""}
+                  {new Date(activeObjectives.created_at).toLocaleDateString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                  })}
+                </span>
               </div>
             ) : (
-              <p className={styles.objectivesEmpty}>No objectives yet</p>
+              <div className={styles.emptyState}>
+                <p>No objectives yet</p>
+                <p className={styles.emptyHint}>Your coach will assign objectives for you.</p>
+              </div>
             )}
           </div>
         ) : (
           <div className={styles.quizContent}>
-            <HelpCircle size={40} className={styles.quizEmptyIcon} />
-            <p className={styles.quizEmptyText}>No quizzes yet</p>
+            {quizList.length === 0 ? (
+              <div className={styles.emptyState}>
+                <HelpCircle size={40} className={styles.quizEmptyIcon} />
+                <p>No quizzes yet</p>
+                <p className={styles.emptyHint}>Your coach will assign quizzes here.</p>
+              </div>
+            ) : (
+              <div className={styles.quizCardList}>
+                {quizList.map((qa) => {
+                  const q = qa.quiz_questions;
+                  if (!q) return null;
+                  const feedback = answeredQuiz[qa.id];
+                  const LETTERS = ["A", "B", "C", "D", "E", "F"];
+
+                  return (
+                    <div
+                      key={qa.id}
+                      className={`${styles.quizCard} ${feedback ? styles.quizCardAnswered : ""}`}
+                    >
+                      <p className={styles.quizQuestion}>{q.question}</p>
+                      {(q.period || q.category) && (
+                        <div className={styles.quizBadges}>
+                          {q.period && <span className={styles.quizBadge}>{q.period}</span>}
+                          {q.category && <span className={styles.quizBadge}>{q.category}</span>}
+                        </div>
+                      )}
+                      <div className={styles.quizOptions}>
+                        {q.options.map((opt, idx) => {
+                          let optClass = styles.quizOption;
+                          if (feedback) {
+                            if (idx === feedback.correct) optClass += ` ${styles.quizOptionCorrect}`;
+                            if (idx === feedback.selected && !feedback.isCorrect) optClass += ` ${styles.quizOptionWrong}`;
+                          }
+                          return (
+                            <button
+                              key={idx}
+                              type="button"
+                              className={optClass}
+                              onClick={() => handleAnswerQuiz(qa.id, idx)}
+                              disabled={!!feedback || answeringId === qa.id}
+                            >
+                              <span className={styles.quizOptionLetter}>{LETTERS[idx]}</span>
+                              <span className={styles.quizOptionText}>{opt}</span>
+                              {feedback && idx === feedback.correct && <Check size={16} className={styles.quizCheckIcon} />}
+                              {feedback && idx === feedback.selected && !feedback.isCorrect && <X size={16} className={styles.quizXIcon} />}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      {feedback && (
+                        <div className={`${styles.quizFeedback} ${feedback.isCorrect ? styles.quizFeedbackCorrect : styles.quizFeedbackWrong}`}>
+                          {feedback.isCorrect ? `Correct! +${feedback.points} pt${feedback.points !== 1 ? "s" : ""}` : "Incorrect · 0 pts"}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -961,57 +1081,16 @@ export default function PlayerHomeClient({
         </div>
       )}
 
-      {/* ─── Notification Bottom Sheet ─── */}
-      {notifOpen && (
-        <div className={styles.notifOverlay} onClick={() => setNotifOpen(false)}>
-          <div className={styles.notifSheet} onClick={(e) => e.stopPropagation()}>
-            <div className={styles.notifHandle} />
-            <div className={styles.notifHeader}>
-              <h3 className={styles.notifTitle}>Notifications</h3>
-              <button type="button" className={styles.notifClose} onClick={() => setNotifOpen(false)}>
-                <X size={18} />
-              </button>
-            </div>
-            <div className={styles.notifList}>
-              {notifList.length === 0 ? (
-                <div className={styles.notifEmpty}>
-                  <BellOff size={40} style={{ opacity: 0.4 }} />
-                  <p>No notifications yet</p>
-                </div>
-              ) : (
-                notifList.map((notif) => (
-                  <div
-                    key={notif.id}
-                    className={`${styles.notifItem} ${!notif.is_read ? styles.notifItemUnread : ""}`}
-                    onClick={() => markAsRead(notif.id)}
-                  >
-                    <div className={styles.notifIcon}>
-                      {getNotifIcon(notif.notification_type)}
-                    </div>
-                    <div className={styles.notifContent}>
-                      <span className={styles.notifItemTitle}>
-                        {getNotifTitle(notif.notification_type, notif.title)}
-                      </span>
-                      {notif.message && (
-                        <span className={styles.notifMessage}>{notif.message}</span>
-                      )}
-                      <span className={styles.notifDate}>
-                        {new Date(notif.created_at).toLocaleDateString("en-US", {
-                          month: "short",
-                          day: "numeric",
-                          hour: "numeric",
-                          minute: "2-digit",
-                        })}
-                      </span>
-                    </div>
-                    {!notif.is_read && <div className={styles.notifDot} />}
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+      {/* ─── Notification Bell (portaled into topbar) ─── */}
+      {bellPortalTarget &&
+        createPortal(
+          <NotificationBell
+            userId={playerId}
+            role="player"
+            initialNotifications={initialNotifications}
+          />,
+          bellPortalTarget
+        )}
     </div>
   );
 }

@@ -35,12 +35,13 @@ function useTopbarVisibility() {
   }
 
   const showSignOut = pathname.includes("/profile");
+  const hideOnDesktop = isAdmin || isCoach;
 
-  return { showTopbar, showSignOut };
+  return { showTopbar, showSignOut, hideOnDesktop };
 }
 
 export function Topbar({ onMenuToggle, rightSlot }: TopbarProps) {
-  const { showTopbar, showSignOut } = useTopbarVisibility();
+  const { showTopbar, showSignOut, hideOnDesktop } = useTopbarVisibility();
 
   function handleSignOut() {
     const form = document.createElement("form");
@@ -53,7 +54,7 @@ export function Topbar({ onMenuToggle, rightSlot }: TopbarProps) {
   if (!showTopbar) return null;
 
   return (
-    <header className={styles.topbar}>
+    <header className={`${styles.topbar} ${hideOnDesktop ? styles.topbarHideDesktop : ""}`}>
       <div className={styles.topbarLeft}>
         <button
           type="button"

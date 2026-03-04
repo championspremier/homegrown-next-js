@@ -90,6 +90,34 @@ export default async function PlayerHomePage() {
     .limit(1)
     .maybeSingle();
 
+  // Unanswered quiz assignments
+  const { data: quizAssignments } = await (supabase as any)
+    .from("quiz_assignments")
+    .select(`
+      id,
+      status,
+      quiz_question_id,
+      quiz_questions (
+        id,
+        question,
+        options,
+        period,
+        category
+      )
+    `)
+    .eq("player_id", playerId)
+    .eq("status", "assigned")
+    .order("assigned_at", { ascending: false })
+    .limit(10);
+
+  // Active objectives with coach name
+  const { data: activeObjectives } = await (supabase as any)
+    .from("player_objectives")
+    .select("id, in_possession_objective, out_of_possession_objective, created_at, coach:coach_id(first_name, last_name)")
+    .eq("player_id", playerId)
+    .eq("is_active", true)
+    .maybeSingle();
+
   const { count: unreadCount } = await supabase
     .from("notifications")
     .select("id", { count: "exact", head: true })
@@ -141,6 +169,69 @@ export default async function PlayerHomePage() {
     };
   });
 
+  // Weekly training data for Elite Standard KPI
+  const now = new Date();
+  const dayOfWeek = now.getDay();
+  const diffToMon = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+  const weekStart = new Date(now);
+  weekStart.setDate(now.getDate() + diffToMon);
+  const mondayStr = weekStart.toISOString().split("T")[0];
+  const weekEnd = new Date(weekStart);
+  weekEnd.setDate(weekStart.getDate() + 6);
+  const sundayStr = weekEnd.toISOString().split("T")[0];
+
+  let weeklyTotalMinutes = 0;
+
+  try {
+    const { data: manualLogs } = await (supabase as any)
+      .from("training_logs")
+      .select("duration_minutes")
+      .eq("player_id", playerId)
+      .gte("training_date", mondayStr)
+      .lte("training_date", sundayStr);
+    for (const log of manualLogs || []) weeklyTotalMinutes += log.duration_minutes || 0;
+  } catch { /* table may not exist */ }
+
+  try {
+    const { count: soloCheckIns } = await (supabase as any)
+      .from("player_solo_session_bookings")
+      .select("id", { count: "exact", head: true })
+      .eq("player_id", playerId)
+      .eq("status", "checked-in")
+      .gte("scheduled_date", mondayStr)
+      .lte("scheduled_date", sundayStr);
+    weeklyTotalMinutes += (soloCheckIns ?? 0) * 30;
+  } catch { /* */ }
+
+  try {
+    const PHYSICAL_SESSION_TYPES = ["Tec Tac", "Speed Training", "Strength & Conditioning"];
+    const weekStartISO = new Date(mondayStr + "T00:00:00Z").toISOString();
+    const weekEndISO = new Date(sundayStr + "T23:59:59Z").toISOString();
+    const { count: groupCount } = await (supabase as any)
+      .from("points_transactions")
+      .select("id", { count: "exact", head: true })
+      .eq("player_id", playerId)
+      .eq("status", "active")
+      .in("session_type", PHYSICAL_SESSION_TYPES)
+      .gte("checked_in_at", weekStartISO)
+      .lte("checked_in_at", weekEndISO);
+    weeklyTotalMinutes += (groupCount ?? 0) * 60;
+  } catch { /* */ }
+
+  let eliteTargetHours = 8;
+  try {
+    const { data: profile } = await (supabase as any)
+      .from("profiles")
+      .select("birth_year")
+      .eq("id", playerId)
+      .single();
+    if (profile?.birth_year) {
+      eliteTargetHours = new Date().getFullYear() - profile.birth_year + 1;
+    }
+  } catch { /* */ }
+
+  const weeklyTotalHours = parseFloat((weeklyTotalMinutes / 60).toFixed(1));
+
   return (
     <PlayerHomeClient
       playerId={playerId}
@@ -155,6 +246,10 @@ export default async function PlayerHomePage() {
       notifications={(notifications || []) as never[]}
       leaderboard={leaderboard}
       soloBookings={(soloBookings || []) as never[]}
+      weeklyTotalHours={weeklyTotalHours}
+      eliteTargetHours={eliteTargetHours}
+      quizAssignments={(quizAssignments || []) as never[]}
+      activeObjectives={activeObjectives as never}
     />
   );
 }

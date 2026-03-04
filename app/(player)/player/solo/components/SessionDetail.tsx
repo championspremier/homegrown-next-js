@@ -23,11 +23,11 @@ import {
   Upload,
   Calendar,
   AlertCircle,
+  Heart,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { formatLabel } from "@/lib/curriculum";
 import { getPeriodLabel } from "@/lib/curriculum-period";
-import { getCurrentQuarter, getSessionType } from "@/lib/points";
 import styles from "./SessionDetail.module.css";
 
 interface DrillData {
@@ -72,6 +72,7 @@ interface Props {
   session: SessionData;
   onBack: () => void;
   playerId: string;
+  likedVideoIds: string[];
 }
 
 interface BookingData {
@@ -115,7 +116,7 @@ function calculateDuration(exercises: DrillData[]): number {
   return Math.max(1, Math.ceil(totalSeconds / 60));
 }
 
-export default function SessionDetail({ session, onBack, playerId }: Props) {
+export default function SessionDetail({ session, onBack, playerId, likedVideoIds }: Props) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 
   const [sheetLevel, setSheetLevel] = useState<SheetLevel>(0);
@@ -142,11 +143,10 @@ export default function SessionDetail({ session, onBack, playerId }: Props) {
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [completedToday, setCompletedToday] = useState(false);
   const [completionCount, setCompletionCount] = useState(0);
-  const [isCompleting, setIsCompleting] = useState(false);
-  const [showCelebration, setShowCelebration] = useState(false);
-  const [earnedPoints, setEarnedPoints] = useState(0);
+  const [likedSet, setLikedSet] = useState<Set<string>>(() => new Set(likedVideoIds));
+  const [likeCounts, setLikeCounts] = useState<Map<string, number>>(new Map());
+  const viewedDrills = useRef(new Set<string>());
 
   const containerRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -269,13 +269,18 @@ export default function SessionDetail({ session, onBack, playerId }: Props) {
     const supabase = createClient();
     (supabase as any)
       .from("solo_session_videos")
-      .select("id,video_url,title,description,orientation")
+      .select("id,video_url,title,description,orientation,like_count")
       .in("id", ids)
-      .then(({ data }: { data: VideoRecord[] | null }) => {
+      .then(({ data }: { data: (VideoRecord & { like_count?: number })[] | null }) => {
         if (!data) return;
         const m = new Map<string, VideoRecord>();
-        for (const v of data) m.set(v.id, v);
+        const lc = new Map<string, number>();
+        for (const v of data) {
+          m.set(v.id, v);
+          lc.set(v.id, v.like_count ?? 0);
+        }
         setVideoMap(m);
+        setLikeCounts(lc);
       });
   }, [session.id]);
 
@@ -286,25 +291,21 @@ export default function SessionDetail({ session, onBack, playerId }: Props) {
 
   const parentId = authUserId && authUserId !== playerId ? authUserId : null;
 
-  /* ── Fetch auth user for storage + check prior completion ── */
+  /* ── Fetch auth user + completion count (checked-in bookings) ── */
   useEffect(() => {
     const supabase = createClient();
     supabase.auth.getUser().then(({ data }) => {
       if (data?.user?.id) setAuthUserId(data.user.id);
     });
 
-    const today = new Date().toISOString().split("T")[0];
     (supabase as any)
-      .from("player_curriculum_progress")
-      .select("id,completed_at,points_earned")
+      .from("player_solo_session_bookings")
+      .select("id", { count: "exact", head: true })
       .eq("player_id", playerId)
-      .eq("session_id", session.id)
-      .is("video_id", null)
-      .order("completed_at", { ascending: false })
-      .then(({ data: rows }: { data: { id: string; completed_at: string; points_earned: number }[] | null }) => {
-        const completions = rows || [];
-        setCompletionCount(completions.length);
-        setCompletedToday(completions.some((c) => c.completed_at?.startsWith(today)));
+      .eq("solo_session_id", session.id)
+      .eq("status", "checked-in")
+      .then(({ count }: { count: number | null }) => {
+        setCompletionCount(count ?? 0);
       });
   }, [session.id, playerId]);
 
@@ -318,6 +319,57 @@ export default function SessionDetail({ session, onBack, playerId }: Props) {
     [videoMap, resolveVideoUrl]
   );
 
+  function trackDrillView(videoId: string) {
+    if (!videoId || viewedDrills.current.has(videoId)) return;
+    viewedDrills.current.add(videoId);
+    const supabase = createClient();
+    supabase.rpc("increment_video_view", { p_video_id: videoId }).then(() => {});
+  }
+
+  function handleToggleDrillLike(videoId: string) {
+    const wasLiked = likedSet.has(videoId);
+
+    setLikedSet((prev) => {
+      const next = new Set(prev);
+      if (wasLiked) next.delete(videoId);
+      else next.add(videoId);
+      return next;
+    });
+    setLikeCounts((prev) => {
+      const next = new Map(prev);
+      next.set(videoId, (prev.get(videoId) ?? 0) + (wasLiked ? -1 : 1));
+      return next;
+    });
+
+    const supabase = createClient();
+    supabase
+      .rpc("toggle_video_like", { p_player_id: playerId, p_video_id: videoId })
+      .then(({ data: isNowLiked, error }: { data: boolean | null; error: unknown }) => {
+        if (error) {
+          setLikedSet((prev) => {
+            const next = new Set(prev);
+            if (wasLiked) next.add(videoId);
+            else next.delete(videoId);
+            return next;
+          });
+          setLikeCounts((prev) => {
+            const next = new Map(prev);
+            next.set(videoId, (prev.get(videoId) ?? 0) + (wasLiked ? 1 : -1));
+            return next;
+          });
+          return;
+        }
+        if (isNowLiked !== !wasLiked) {
+          setLikedSet((prev) => {
+            const next = new Set(prev);
+            if (isNowLiked) next.add(videoId);
+            else next.delete(videoId);
+            return next;
+          });
+        }
+      });
+  }
+
   function playDrill(drill: DrillData) {
     const url = getVideoUrl(drill);
     if (!url) return;
@@ -325,6 +377,7 @@ export default function SessionDetail({ session, onBack, playerId }: Props) {
     setActiveVideoUrl(url);
     setIsPlaying(true);
     setVideoFailed(false);
+    trackDrillView(drill.video_id);
     setTimeout(() => videoRef.current?.play().catch(() => {}), 100);
   }
 
@@ -349,71 +402,6 @@ export default function SessionDetail({ session, onBack, playerId }: Props) {
     setTimeout(() => setToastMsg(null), 2000);
   }
 
-  /* ── Session completion ── */
-  async function handleComplete() {
-    if (!playerId || completedToday || isCompleting) return;
-    setIsCompleting(true);
-
-    const supabase = createClient();
-    const pointsValue = 1.0;
-    const sessionType = getSessionType(session.category, session.skill);
-    const { year, quarter } = getCurrentQuarter();
-    const now = new Date().toISOString();
-
-    const { error: progressError } = await (supabase as any)
-      .from("player_curriculum_progress")
-      .insert({
-        player_id: playerId,
-        period: session.period,
-        category: session.category,
-        skill: session.skill || null,
-        sub_skill: session.sub_skill || null,
-        session_type: "solo",
-        session_id: session.id,
-        video_id: null,
-        points_earned: pointsValue,
-        completed_at: now,
-      });
-
-    if (progressError) {
-      setIsCompleting(false);
-      if (progressError.code === "23505") {
-        showToast("Already completed today! Come back tomorrow.");
-        setCompletedToday(true);
-      } else {
-        showToast("Error saving progress. Try again.");
-        console.error("[complete] progress insert error:", progressError);
-      }
-      return;
-    }
-
-    let pointsAwarded = false;
-    try {
-      const { error: pointsError } = await (supabase as any)
-        .from("points_transactions")
-        .insert({
-          player_id: playerId,
-          points: pointsValue,
-          session_type: sessionType,
-          session_id: session.id,
-          quarter_year: year,
-          quarter_number: quarter,
-          status: "active",
-          checked_in_at: now,
-        });
-      if (!pointsError) pointsAwarded = true;
-      else console.warn("[complete] points not awarded (non-blocking):", pointsError.message);
-    } catch (e) {
-      console.warn("[complete] points insert failed (non-blocking):", e);
-    }
-
-    setIsCompleting(false);
-    setCompletedToday(true);
-    setCompletionCount((c) => c + 1);
-    setEarnedPoints(pointsAwarded ? pointsValue : 0);
-    setShowCelebration(true);
-  }
-
   /* ── Schedule modal ── */
   async function openScheduleModal() {
     if (!playerId) return;
@@ -426,7 +414,7 @@ export default function SessionDetail({ session, onBack, playerId }: Props) {
       .select("*")
       .eq("player_id", playerId)
       .eq("solo_session_id", session.id)
-      .in("status", ["scheduled", "pending_review", "checked-in", "denied"])
+      .in("status", ["scheduled", "pending_review"])
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
@@ -443,16 +431,25 @@ export default function SessionDetail({ session, onBack, playerId }: Props) {
 
     const { data: existing } = await (supabase as any)
       .from("player_solo_session_bookings")
-      .select("id, solo_session:solo_sessions(skill)")
+      .select("id, solo_session:solo_sessions(category, skill)")
       .eq("player_id", playerId)
       .eq("scheduled_date", selectedDate)
-      .in("status", ["scheduled", "completed", "pending_review", "checked-in"]);
+      .neq("status", "denied");
 
-    const sameSkill = (existing as any[])?.some(
-      (b: any) => b.solo_session?.skill === session.skill
+    const bookings = (existing as any[]) || [];
+
+    if (bookings.length >= 3) {
+      showToast("You've reached the maximum of 3 solo sessions per day. Try a different date.");
+      setSchedLoading(false);
+      return;
+    }
+
+    const sameCategory = bookings.some(
+      (b: any) => b.solo_session?.category === session.category
     );
-    if (sameSkill) {
-      showToast("One session per skill per day.");
+    if (sameCategory) {
+      const cat = session.category.charAt(0).toUpperCase() + session.category.slice(1);
+      showToast(`You've already scheduled a ${cat} session for this date. Try a different category or date.`);
       setSchedLoading(false);
       return;
     }
@@ -653,15 +650,20 @@ export default function SessionDetail({ session, onBack, playerId }: Props) {
     }
 
     if (session.category === "physical") {
-      const setMap = new Map<number, DrillData[]>();
-      for (const d of mainDrills) {
-        const sn = d.set_number ?? 1;
-        if (!setMap.has(sn)) setMap.set(sn, []);
-        setMap.get(sn)!.push(d);
-      }
-      const sortedSets = Array.from(setMap.entries()).sort((a, b) => a[0] - b[0]);
-      for (const [setNum, drills] of sortedSets) {
-        sections.push({ key: `set-${setNum}`, label: `Set ${setNum}`, drills });
+      const hasSetNumbers = mainDrills.some((d) => d.set_number && d.set_number > 0);
+      if (hasSetNumbers) {
+        const setMap = new Map<number, DrillData[]>();
+        for (const d of mainDrills) {
+          const sn = d.set_number ?? 1;
+          if (!setMap.has(sn)) setMap.set(sn, []);
+          setMap.get(sn)!.push(d);
+        }
+        const sortedSets = Array.from(setMap.entries()).sort((a, b) => a[0] - b[0]);
+        for (const [setNum, drills] of sortedSets) {
+          sections.push({ key: `set-${setNum}`, label: `Set ${setNum}`, drills });
+        }
+      } else if (mainDrills.length > 0) {
+        sections.push({ key: "main", label: "Exercises", drills: mainDrills });
       }
     } else if (session.category === "mental") {
       if (mainDrills.length > 0) {
@@ -763,6 +765,11 @@ export default function SessionDetail({ session, onBack, playerId }: Props) {
               <span className={styles.ovalItem}>
                 <ListOrdered size={14} /> {drillCount} drill{drillCount !== 1 ? "s" : ""}
               </span>
+              {completionCount > 0 && (
+                <span className={`${styles.ovalItem} ${styles.ovalItemCompleted}`}>
+                  <CheckCircle2 size={14} /> {completionCount}x
+                </span>
+              )}
             </div>
           </div>
         )}
@@ -893,14 +900,31 @@ export default function SessionDetail({ session, onBack, playerId }: Props) {
                                 </div>
                               </div>
 
-                              {drill.coaching_points && (
+                              <div className={styles.drillActions}>
                                 <button
-                                  className={styles.coachingBtn}
-                                  onClick={() => setCoachingModal(drill.coaching_points!)}
+                                  className={styles.drillLikeBtn}
+                                  onClick={() => handleToggleDrillLike(drill.video_id)}
                                 >
-                                  <FileText size={14} />
+                                  <Heart
+                                    size={16}
+                                    fill={likedSet.has(drill.video_id) ? "#ff3040" : "none"}
+                                    color={likedSet.has(drill.video_id) ? "#ff3040" : "var(--text-muted, #999)"}
+                                  />
+                                  {(likeCounts.get(drill.video_id) ?? 0) > 0 && (
+                                    <span className={styles.drillLikeCount}>
+                                      {likeCounts.get(drill.video_id)}
+                                    </span>
+                                  )}
                                 </button>
-                              )}
+                                {drill.coaching_points && (
+                                  <button
+                                    className={styles.coachingBtn}
+                                    onClick={() => setCoachingModal(drill.coaching_points!)}
+                                  >
+                                    <FileText size={14} />
+                                  </button>
+                                )}
+                              </div>
                             </div>
                           );
                         })}
@@ -1130,67 +1154,6 @@ export default function SessionDetail({ session, onBack, playerId }: Props) {
                 </button>
               </div>
             )}
-          </div>
-        </div>
-      )}
-
-      {/* ── Complete Session button — visible only at Level 0 ── */}
-      {isOval && playerId && (
-        <div className={styles.completeArea}>
-          {completedToday ? (
-            <div className={styles.completedBadge}>
-              <CheckCircle2 size={20} />
-              <span>Completed Today ✓</span>
-              {completionCount > 1 && (
-                <span className={styles.completedDate}>
-                  Done {completionCount} times total
-                </span>
-              )}
-            </div>
-          ) : (
-            <>
-              {completionCount > 0 && (
-                <span className={styles.completionHistory}>
-                  Done {completionCount} time{completionCount !== 1 ? "s" : ""}
-                </span>
-              )}
-              <button
-                className={styles.completeBtn}
-                onClick={handleComplete}
-                disabled={isCompleting}
-              >
-                {isCompleting ? "Completing..." : "Complete Session \u2713"}
-              </button>
-            </>
-          )}
-        </div>
-      )}
-
-      {/* ── Celebration overlay ── */}
-      {showCelebration && (
-        <div className={styles.celebrationOverlay}>
-          <div className={styles.celebrationCard}>
-            <div className={styles.celebrationIcon}>
-              <CheckCircle2 size={56} />
-            </div>
-            <h2 className={styles.celebrationTitle}>Session Complete!</h2>
-            {earnedPoints > 0 ? (
-              <p className={styles.celebrationPoints}>+{earnedPoints} point{earnedPoints !== 1 ? "s" : ""}</p>
-            ) : (
-              <p className={styles.celebrationSubtext}>Session recorded!</p>
-            )}
-            <p className={styles.celebrationHint}>
-              This will appear on your tracking dashboard
-            </p>
-            <button
-              className={styles.celebrationDone}
-              onClick={() => {
-                setShowCelebration(false);
-                onBack();
-              }}
-            >
-              Done
-            </button>
           </div>
         </div>
       )}

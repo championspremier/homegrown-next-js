@@ -1,11 +1,11 @@
 .page {
   max-width: 100%;
-  width: 92%;
   margin: 0 auto;
   padding: 0 16px 40px;
   display: flex;
   flex-direction: column;
   align-items: center;
+  overflow-x: hidden;
 }
 
 /* ─── Leaderboard ─── */
@@ -284,6 +284,9 @@
 .sessionsSection {
   margin-bottom: 28px;
   min-height: 80px;
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
 }
 
 .emptyState {
@@ -298,9 +301,12 @@
   display: flex;
   gap: 14px;
   overflow-x: auto;
+  overflow-y: hidden;
   scroll-snap-type: x mandatory;
   padding-bottom: 8px;
   -webkit-overflow-scrolling: touch;
+  width: 100%;
+  max-width: 100%;
 }
 
 .sessionsScroll::-webkit-scrollbar {
@@ -310,6 +316,7 @@
 .sessionCard {
   flex-shrink: 0;
   width: 280px;
+  min-width: 280px;
   scroll-snap-align: start;
   background: var(--surface, var(--background));
   border: 1px solid var(--border);
@@ -818,6 +825,7 @@
 
   .sessionCard {
     width: 260px;
+    min-width: 260px;
   }
 
   .toggleCard {
@@ -840,4 +848,148 @@
   .toggleCard:last-child.toggleCardActive {
     right: calc(50% - 74px);
   }
+}
+
+/* ── Elite Standard vertical widget carousel ── */
+.eliteWrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.eliteWrapperSingle {
+  gap: 0;
+}
+
+.eliteScroll {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  scrollbar-width: none;
+}
+
+.eliteScroll::-webkit-scrollbar {
+  display: none;
+}
+
+.eliteScrollMultiple {
+  overflow-y: auto;
+  overflow-x: hidden;
+  max-height: 116px;
+  scroll-snap-type: y mandatory;
+  -webkit-overflow-scrolling: touch;
+  padding: 4px 0;
+}
+
+.eliteCard {
+  flex-shrink: 0;
+  padding: 16px;
+  border-radius: 16px;
+  background: var(--surface, var(--background));
+  border: 1px solid var(--border);
+  scroll-snap-align: center;
+  transform-origin: center center;
+  transition: transform 0.25s ease, opacity 0.25s ease;
+  will-change: transform, opacity;
+}
+
+.eliteScroll .eliteCard:only-child {
+  width: 100%;
+}
+
+.eliteCardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 10px;
+}
+
+.eliteCardLabels {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.eliteCardName {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--foreground);
+  line-height: 1.2;
+}
+
+.eliteCardLabel {
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--muted);
+}
+
+.eliteCardHours {
+  font-size: 0.9rem;
+  color: var(--foreground);
+  text-align: right;
+  white-space: nowrap;
+}
+
+.eliteHoursValue {
+  font-weight: 800;
+  font-size: 1.1rem;
+  background: var(--accent);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+
+.eliteHoursTarget {
+  font-weight: 500;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.eliteBarTrack {
+  width: 100%;
+  height: 8px;
+  border-radius: 4px;
+  background: var(--border);
+  overflow: hidden;
+}
+
+.eliteBarFill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.5s ease;
+}
+
+/* ── Vertical dots (right side) ── */
+.eliteDots {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 4px;
+  flex-shrink: 0;
+}
+
+.eliteDot {
+  width: 8px;
+  height: 8px;
+  min-width: 8px;
+  min-height: 8px;
+  border-radius: 50%;
+  background: var(--border);
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.2s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.eliteDotActive {
+  background: var(--accent-solid);
+  transform: scale(1.4);
 }

@@ -1,0 +1,437 @@
+/* ══════════════════════════════════════════
+   Training Tab — Log & History
+   ══════════════════════════════════════════ */
+
+.container {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 100px);
+}
+
+/* ── Weekly summary card ── */
+.weeklyCard {
+  background: var(--surface, var(--background));
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 20px;
+  text-align: center;
+}
+
+.weeklyHours {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: var(--foreground);
+  margin: 0 0 4px;
+}
+
+.weeklyHoursValue {
+  display: inline;
+  font-weight: 800;
+  background: linear-gradient(90deg, #ff1744 0%, #d500f9 25%, #7c4dff 50%, #3d5afe 75%, #ff1744 100%);
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  animation: gradientShift 3s ease-in-out infinite;
+}
+
+@keyframes gradientShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.weeklyLabel {
+  font-size: 0.78rem;
+  color: var(--muted);
+  margin-bottom: 12px;
+}
+
+.eliteLabel {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--muted);
+  margin: 0 0 2px;
+  text-align: left;
+}
+
+.eliteBar {
+  width: 100%;
+  height: 8px;
+  border-radius: 4px;
+  background: var(--border);
+  overflow: hidden;
+  margin-top: 4px;
+}
+
+.eliteBarFill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.5s ease, background-color 0.3s ease;
+}
+
+/* ── Type selector grid ── */
+.typeGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+@media (max-width: 480px) {
+  .typeGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.typeCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 14px 8px;
+  min-height: 44px;
+  border-radius: 12px;
+  border: 1.5px solid var(--border);
+  background: var(--surface, var(--background));
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.typeCard:hover {
+  background: color-mix(in srgb, var(--foreground) 4%, transparent);
+}
+
+.typeCardSelected {
+  border-color: var(--accent-solid, #3b82f6);
+  background: color-mix(in srgb, var(--accent-solid, #3b82f6) 8%, transparent);
+}
+
+.typeCardLabel {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--foreground);
+  text-align: center;
+}
+
+/* ── Form ── */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  background: var(--surface, var(--background));
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 20px;
+}
+
+.formLabel {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--muted);
+  margin-bottom: 4px;
+  display: block;
+}
+
+.formInput {
+  width: 100%;
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--background);
+  color: var(--foreground);
+  font-size: 0.9rem;
+  outline: none;
+  transition: border-color 0.15s;
+  box-sizing: border-box;
+}
+
+.formInput:focus {
+  border-color: var(--accent-solid, #3b82f6);
+}
+
+.formTextarea {
+  composes: formInput;
+  min-height: 80px;
+  resize: vertical;
+}
+
+.formRow {
+  display: flex;
+  gap: 10px;
+}
+
+.formRow > * {
+  flex: 1;
+  min-width: 0;
+}
+
+/* ── Exercise builder (strength) ── */
+.exerciseSection {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.exerciseRow {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+}
+
+.exerciseRow > * {
+  min-width: 0;
+}
+
+.exerciseNameCol {
+  flex: 2;
+}
+
+.exerciseNumCol {
+  flex: 1;
+}
+
+.exerciseAddBtn {
+  height: 42px;
+  padding: 0 14px;
+  border-radius: 10px;
+  border: none;
+  background: var(--accent-solid, #3b82f6);
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: opacity 0.15s;
+}
+
+.exerciseAddBtn:hover {
+  opacity: 0.85;
+}
+
+.exerciseList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.exerciseItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--foreground) 4%, transparent);
+  font-size: 0.82rem;
+  color: var(--foreground);
+}
+
+.exerciseItemInfo {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.exerciseItemName {
+  font-weight: 600;
+}
+
+.exerciseItemMeta {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.exerciseRemoveBtn {
+  background: none;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 4px;
+  flex-shrink: 0;
+  transition: color 0.15s;
+}
+
+.exerciseRemoveBtn:hover {
+  color: #ef4444;
+}
+
+/* ── Submit button ── */
+.submitBtn {
+  width: 100%;
+  height: 48px;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--accent-solid, #3b82f6), #8b5cf6);
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.15s, box-shadow 0.15s;
+}
+
+.submitBtn:hover {
+  opacity: 0.9;
+  box-shadow: 0 4px 14px rgba(139, 92, 246, 0.35);
+}
+
+.submitBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.submitSuccess {
+  background: #22c55e;
+  color: #fff;
+}
+
+.formError {
+  font-size: 0.8rem;
+  color: #ef4444;
+  text-align: center;
+}
+
+/* ── History section ── */
+.historyHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.historyTitle {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--foreground);
+}
+
+.historyCount {
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.dateGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dateGroupLabel {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding-top: 4px;
+}
+
+.logCard {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  background: var(--surface, var(--background));
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.logBadge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  flex-shrink: 0;
+}
+
+.logBody {
+  flex: 1;
+  min-width: 0;
+}
+
+.logTitle {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--foreground);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.logMeta {
+  font-size: 0.72rem;
+  color: var(--muted);
+  display: flex;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.logDeleteBtn {
+  background: none;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 6px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  transition: color 0.15s, background 0.15s;
+}
+
+.logDeleteBtn:hover {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.08);
+}
+
+/* ── Expandable exercises in log ── */
+.logExercises {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+
+.logExerciseToggle {
+  background: none;
+  border: none;
+  color: var(--accent-solid, #3b82f6);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+}
+
+.logExerciseList {
+  margin-top: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.logExerciseRow {
+  font-size: 0.75rem;
+  color: var(--muted);
+  display: flex;
+  gap: 6px;
+}
+
+.logExerciseRowName {
+  font-weight: 600;
+  color: var(--foreground);
+}
+
+.emptyHistory {
+  text-align: center;
+  padding: 32px 0;
+  color: var(--muted);
+  font-size: 0.88rem;
+}

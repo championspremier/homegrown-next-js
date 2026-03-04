@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState, useEffect, useCallback } from "react";
-import { ChevronRight, Volume2, VolumeX, Maximize, X, Play, Pause, AlertTriangle } from "lucide-react";
+import { ChevronRight, Volume2, VolumeX, Maximize, X, Play, Pause, AlertTriangle, Heart } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { getCurrentQuarter } from "@/lib/points";
 import { getCurrentPeriod } from "@/lib/curriculum-period";
@@ -20,6 +20,8 @@ export interface ReelVideo {
   difficulty_level: string | null;
   duration?: number | null;
   orientation?: string | null;
+  like_count?: number | null;
+  view_count?: number | null;
   created_at: string;
 }
 
@@ -38,6 +40,7 @@ interface Props {
   mode: "start-here" | "tactical";
   period: string;
   playerId: string;
+  likedVideoIds: string[];
   onGoToSession?: (sessionId: string) => void;
 }
 
@@ -47,7 +50,7 @@ function formatTime(seconds: number): string {
   return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
-export default function VideoReel({ videos, sessions, mode, period, playerId, onGoToSession }: Props) {
+export default function VideoReel({ videos, sessions, mode, period, playerId, likedVideoIds, onGoToSession }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const videoRefs = useRef<Map<number, HTMLVideoElement>>(new Map());
   const [activeIndex, setActiveIndex] = useState(0);
@@ -64,9 +67,38 @@ export default function VideoReel({ videos, sessions, mode, period, playerId, on
   const [errorSet, setErrorSet] = useState<Set<number>>(new Set());
   const [reelToast, setReelToast] = useState<string | null>(null);
 
+  const viewedVideos = useRef(new Set<string>());
+  const [likedSet, setLikedSet] = useState<Set<string>>(() => new Set(likedVideoIds || []));
+  const [likeCounts, setLikeCounts] = useState<Map<string, number>>(() => {
+    const m = new Map<string, number>();
+    videos.forEach((v) => m.set(v.id, v.like_count ?? 0));
+    return m;
+  });
+
+  useEffect(() => {
+    setLikedSet(new Set(likedVideoIds || []));
+  }, [likedVideoIds]);
+
+  useEffect(() => {
+    const m = new Map<string, number>();
+    videos.forEach((v) => m.set(v.id, v.like_count ?? 0));
+    setLikeCounts(m);
+  }, [videos]);
+
   const filteredVideos = (() => {
     if (mode === "start-here") {
-      return videos.filter((v) => v.category !== "tactical").slice(0, 15);
+      return [...videos]
+        .filter((v) => v.category !== "tactical")
+        .sort((a, b) => {
+          const aLikes = likeCounts.get(a.id) ?? a.like_count ?? 0;
+          const bLikes = likeCounts.get(b.id) ?? b.like_count ?? 0;
+          if (bLikes !== aLikes) return bLikes - aLikes;
+          const aViews = a.view_count ?? 0;
+          const bViews = b.view_count ?? 0;
+          if (bViews !== aViews) return bViews - aViews;
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        })
+        .slice(0, 15);
     }
     return videos.filter(
       (v) => v.category === "tactical" && (v.period === period || v.period === "all")
@@ -83,6 +115,60 @@ export default function VideoReel({ videos, sessions, mode, period, playerId, on
       return null;
     },
     [sessions]
+  );
+
+  const trackView = useCallback(
+    (videoId: string) => {
+      if (viewedVideos.current.has(videoId)) return;
+      viewedVideos.current.add(videoId);
+      const supabase = createClient();
+      supabase.rpc("increment_video_view", { p_video_id: videoId }).then(() => {});
+    },
+    []
+  );
+
+  const handleToggleLike = useCallback(
+    async (videoId: string) => {
+      if (!videoId || !playerId) return;
+
+      let wasLiked = false;
+      setLikedSet((prev) => {
+        wasLiked = prev.has(videoId);
+        const next = new Set(prev);
+        if (wasLiked) next.delete(videoId);
+        else next.add(videoId);
+        return next;
+      });
+      setLikeCounts((prev) => {
+        const next = new Map(prev);
+        const current = next.get(videoId) ?? 0;
+        next.set(videoId, wasLiked ? Math.max(current - 1, 0) : current + 1);
+        return next;
+      });
+
+      try {
+        const supabase = createClient();
+        await supabase.rpc("toggle_video_like", {
+          p_player_id: playerId,
+          p_video_id: videoId,
+        });
+      } catch (e) {
+        console.warn("Like toggle failed:", e);
+        setLikedSet((prev) => {
+          const next = new Set(prev);
+          if (wasLiked) next.add(videoId);
+          else next.delete(videoId);
+          return next;
+        });
+        setLikeCounts((prev) => {
+          const next = new Map(prev);
+          const current = next.get(videoId) ?? 0;
+          next.set(videoId, wasLiked ? current + 1 : Math.max(current - 1, 0));
+          return next;
+        });
+      }
+    },
+    [playerId]
   );
 
   useEffect(() => {
@@ -108,6 +194,11 @@ export default function VideoReel({ videos, sessions, mode, period, playerId, on
 
     return () => observer.disconnect();
   }, [filteredVideos.length]);
+
+  useEffect(() => {
+    const activeVideo = filteredVideos[activeIndex];
+    if (activeVideo) trackView(activeVideo.id);
+  }, [activeIndex, filteredVideos, trackView]);
 
   useEffect(() => {
     videoRefs.current.forEach((video) => {
@@ -287,6 +378,8 @@ export default function VideoReel({ videos, sessions, mode, period, playerId, on
           const isPaused = pausedSet.has(index);
           const hasError = errorSet.has(index);
           const showTap = tapIcon?.index === index;
+          const isLiked = likedSet.has(video.id);
+          const videoLikeCount = likeCounts.get(video.id) ?? video.like_count ?? 0;
 
           return (
             <div
@@ -361,6 +454,22 @@ export default function VideoReel({ videos, sessions, mode, period, playerId, on
                       )}
                     </div>
                     <div className={styles.bottomRight}>
+                      <button
+                        className={styles.likeButton}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleToggleLike(video.id);
+                        }}
+                      >
+                        <Heart
+                          size={24}
+                          fill={isLiked ? "#ff3040" : "none"}
+                          color={isLiked ? "#ff3040" : "white"}
+                        />
+                        <span className={styles.likeCount}>
+                          {videoLikeCount}
+                        </span>
+                      </button>
                       {isLandscape && (
                         <button
                           className={styles.fullscreenBtn}
