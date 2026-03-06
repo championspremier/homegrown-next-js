@@ -17,9 +17,11 @@ import {
   ChevronRight,
   ChartNoAxesCombined,
   SquarePlay,
+  X,
 } from "lucide-react";
 import styles from "./layout.module.css";
 import type { NavItem } from "@/lib/nav";
+import type { BrandingProps } from "./AppShell";
 
 const SIDEBAR_STORAGE_KEY = "hg-sidebar-state";
 
@@ -44,6 +46,8 @@ interface SidebarProps {
   profilePhotoUrl?: string | null;
   open: boolean;
   onClose: () => void;
+  mobileDrawer?: boolean;
+  branding?: BrandingProps;
 }
 
 function isActive(pathname: string, href: string): boolean {
@@ -54,7 +58,7 @@ function isActive(pathname: string, href: string): boolean {
   return pathname.startsWith(href);
 }
 
-export function Sidebar({ navItems, roleHome, profilePhotoUrl, open, onClose }: SidebarProps) {
+export function Sidebar({ navItems, roleHome, profilePhotoUrl, open, onClose, mobileDrawer, branding }: SidebarProps) {
   const pathname = usePathname() ?? "";
   const [isCollapsed, setIsCollapsed] = useState(false);
 
@@ -71,9 +75,13 @@ export function Sidebar({ navItems, roleHome, profilePhotoUrl, open, onClose }: 
     setIsCollapsed((prev) => !prev);
   }
 
+  const drawerCls = mobileDrawer ? styles.sidebarDrawerMode : "";
+  const drawerOpenCls = mobileDrawer && open ? styles.sidebarDrawerOpen : "";
+
   return (
     <>
-      {open && (
+      {mobileDrawer && open && <div className={styles.drawerBackdrop} />}
+      {!mobileDrawer && open && (
         <button
           type="button"
           className={styles.sidebarBackdrop}
@@ -82,13 +90,24 @@ export function Sidebar({ navItems, roleHome, profilePhotoUrl, open, onClose }: 
         />
       )}
       <aside
-        className={`${styles.sidebar} ${styles.sidebarWrapper} ${isCollapsed ? styles.sidebarCollapsed : ""} ${open ? styles.sidebarMobileOpen : ""}`}
+        className={`${styles.sidebar} ${styles.sidebarWrapper} ${isCollapsed ? styles.sidebarCollapsed : ""} ${open ? styles.sidebarMobileOpen : ""} ${drawerCls} ${drawerOpenCls}`}
         aria-label="Main navigation"
       >
+        {mobileDrawer && (
+          <button type="button" className={styles.drawerCloseBtn} onClick={onClose} aria-label="Close menu">
+            <X size={20} />
+          </button>
+        )}
         <div className={styles.sidebarHeader}>
-          <Link href={roleHome} className={styles.sidebarLogo} onClick={onClose} aria-label="Homegrown">
-            <img src="/logo-light.png" alt="" className={styles.logoLight} width={40} height={40} />
-            <img src="/logo-dark.png" alt="" className={styles.logoDark} width={40} height={40} />
+          <Link href={roleHome} className={styles.sidebarLogo} onClick={onClose} aria-label={branding?.program_name || "Homegrown"}>
+            {branding?.white_label_enabled && branding.logo_url && branding.logo_url !== "/logo-light.png" ? (
+              <img src={branding.logo_url} alt="" className={styles.brandLogo} width={40} height={40} />
+            ) : (
+              <>
+                <img src="/logo-light.png" alt="" className={styles.logoLight} width={40} height={40} />
+                <img src="/logo-dark.png" alt="" className={styles.logoDark} width={40} height={40} />
+              </>
+            )}
           </Link>
           <button
             type="button"

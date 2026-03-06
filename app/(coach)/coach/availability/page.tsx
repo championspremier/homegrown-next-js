@@ -42,7 +42,7 @@ export default async function CoachAvailabilityPage() {
   return (
     <AvailabilityClient
       coachId={coachId}
-      coachName={(profile.full_name as string) || (profile.first_name as string) || "Coach"}
+      coachName={((profile as { full_name?: string | null; first_name?: string | null }).full_name ?? (profile as { first_name?: string | null }).first_name ?? "Coach") as string}
       recurringAvailability={recurringAvailability || []}
       dateOverrides={(dateOverrides || []).map((d: Record<string, unknown>) => ({
         id: d.id as string,

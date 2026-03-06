@@ -291,6 +291,19 @@
   flex: 1;
 }
 
+.virtualSlotLock {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78rem;
+  color: #b45309;
+  flex-shrink: 0;
+}
+
+.virtualSlotLock svg {
+  color: #f59e0b;
+}
+
 /* Compact single-row slot cards */
 .slotCard {
   display: flex;

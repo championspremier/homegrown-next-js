@@ -269,6 +269,35 @@ export default async function ParentTrackingPage({
     if (tt === "team-training") inc(rawScores.physical, "conditioning");
   }
 
+  /* ── Coach player ratings (for maturity/socially/work-ethic) ── */
+  const effectivePlayerId = playerId;
+  let coachRating: { maturity: number; socially: number; work_ethic: number } | null = null;
+  try {
+    const { data: ratingData, error } = await (supabase as any)
+      .from("coach_player_ratings")
+      .select("maturity, socially, work_ethic")
+      .eq("player_id", effectivePlayerId)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    console.log("[COACH RATINGS] effectivePlayerId:", effectivePlayerId);
+    console.log("[COACH RATINGS] query result:", { data: ratingData, error });
+    const ratingRow = Array.isArray(ratingData) ? ratingData[0] : ratingData;
+    if (ratingRow) coachRating = ratingRow;
+  } catch (e) {
+    console.log("[COACH RATINGS] catch:", e);
+  }
+
+  const effectiveCoachOnly = new Set(MENTAL_COACH_ONLY);
+  if (coachRating) {
+    rawScores.mental["maturity"] = coachRating.maturity;
+    rawScores.mental["socially"] = coachRating.socially;
+    rawScores.mental["work-ethic"] = coachRating.work_ethic;
+    effectiveCoachOnly.delete("maturity");
+    effectiveCoachOnly.delete("socially");
+    effectiveCoachOnly.delete("work-ethic");
+  }
+
   function capScores(raw: Record<string, number>, coachOnly?: Set<string>): Record<string, number | null> {
     const out: Record<string, number | null> = {};
     for (const [k, v] of Object.entries(raw)) out[k] = coachOnly?.has(k) ? null : Math.min(10, v);
@@ -279,7 +308,7 @@ export default async function ParentTrackingPage({
     tactical: { axes: TACTICAL_AXES.map((a) => ({ key: a, label: a.split("-").map((w) => w[0].toUpperCase() + w.slice(1)).join(" "), coachOnly: false })), scores: capScores(rawScores.tactical) },
     technical: { axes: TECHNICAL_AXES.map((a) => ({ key: a, label: a.split("-").map((w) => w[0].toUpperCase() + w.slice(1)).join(" "), coachOnly: false })), scores: capScores(rawScores.technical) },
     physical: { axes: PHYSICAL_AXES.map((a) => ({ key: a, label: a.split("-").map((w) => w[0].toUpperCase() + w.slice(1)).join(" "), coachOnly: false })), scores: capScores(rawScores.physical) },
-    mental: { axes: MENTAL_AXES.map((a) => ({ key: a, label: a.split("-").map((w) => w[0].toUpperCase() + w.slice(1)).join(" "), coachOnly: MENTAL_COACH_ONLY.has(a) })), scores: capScores(rawScores.mental, MENTAL_COACH_ONLY) },
+    mental: { axes: MENTAL_AXES.map((a) => ({ key: a, label: a.split("-").map((w) => w[0].toUpperCase() + w.slice(1)).join(" "), coachOnly: effectiveCoachOnly.has(a) })), scores: capScores(rawScores.mental, effectiveCoachOnly) },
   };
 
   const pointsData = {

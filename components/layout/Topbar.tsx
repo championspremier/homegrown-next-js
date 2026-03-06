@@ -3,10 +3,13 @@
 import { ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import styles from "./layout.module.css";
+import type { BrandingProps } from "./AppShell";
 
 interface TopbarProps {
   onMenuToggle: () => void;
   rightSlot?: ReactNode;
+  mobileDrawer?: boolean;
+  branding?: BrandingProps;
 }
 
 function useTopbarVisibility() {
@@ -40,7 +43,7 @@ function useTopbarVisibility() {
   return { showTopbar, showSignOut, hideOnDesktop };
 }
 
-export function Topbar({ onMenuToggle, rightSlot }: TopbarProps) {
+export function Topbar({ onMenuToggle, rightSlot, mobileDrawer, branding }: TopbarProps) {
   const { showTopbar, showSignOut, hideOnDesktop } = useTopbarVisibility();
 
   function handleSignOut() {
@@ -51,7 +54,10 @@ export function Topbar({ onMenuToggle, rightSlot }: TopbarProps) {
     form.submit();
   }
 
-  if (!showTopbar) return null;
+  if (!showTopbar && !mobileDrawer) return null;
+
+  const hasCustomLogo = branding?.white_label_enabled && branding.logo_url && branding.logo_url !== "/logo-light.png";
+  const displayName = branding?.program_name || "Homegrown";
 
   return (
     <header className={`${styles.topbar} ${hideOnDesktop ? styles.topbarHideDesktop : ""}`}>
@@ -67,6 +73,13 @@ export function Topbar({ onMenuToggle, rightSlot }: TopbarProps) {
           </svg>
         </button>
       </div>
+      {mobileDrawer && (
+        hasCustomLogo ? (
+          <img src={branding!.logo_url!} alt={displayName} className={styles.topbarLogo} />
+        ) : (
+          <span className={styles.topbarCenter}>{displayName}</span>
+        )
+      )}
       <div className={styles.topbarRight}>
         {rightSlot}
         {showSignOut && (

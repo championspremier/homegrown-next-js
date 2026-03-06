@@ -1,0 +1,741 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 1100;
+}
+
+@media (min-width: 768px) {
+  .overlay {
+    align-items: center;
+  }
+}
+
+.modal {
+  background: var(--surface);
+  border-radius: 20px 20px 0 0;
+  width: 100%;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.15);
+}
+
+@media (min-width: 768px) {
+  .modal {
+    max-width: 900px;
+    max-height: 90vh;
+    border-radius: 16px;
+  }
+}
+
+.header {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px 48px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.title {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--foreground);
+  margin: 0;
+  flex: 1;
+  text-align: center;
+}
+
+.closeBtn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--muted);
+  padding: 4px;
+  border-radius: 8px;
+  position: absolute;
+  right: 16px;
+}
+
+.closeBtn:hover {
+  color: var(--foreground);
+}
+
+.programTabsWrap {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 20px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+
+.programTabs {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  justify-content: center;
+  flex: 1;
+}
+
+.programTabsInfoWrap {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.programTabsInfoBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  background: none;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  border-radius: 6px;
+}
+
+.programTabsInfoBtn:hover {
+  color: var(--foreground);
+  background: var(--hover, rgba(0, 0, 0, 0.04));
+}
+
+.programTabsInfoBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+}
+
+.programTabsInfoPopover {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 8px;
+  padding: 12px 32px 12px 14px;
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  max-width: 280px;
+  z-index: 2;
+}
+
+.programTabsInfoClose {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  padding: 4px;
+  background: none;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.programTabsInfoClose:hover {
+  color: var(--foreground);
+}
+
+.programTabsInfoText {
+  font-size: 0.82rem;
+  color: var(--foreground);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.programTab {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: inherit;
+}
+
+.programTab:hover {
+  color: var(--foreground);
+  border-color: var(--foreground);
+}
+
+.programTabActive {
+  background: var(--accent);
+  color: var(--accent-foreground);
+  border-color: transparent;
+}
+
+.programTabLogo {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.programTabLogoFallback {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--accent-foreground);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.billingToggle {
+  display: flex;
+  gap: 0;
+  padding: 12px 20px;
+  justify-content: center;
+}
+
+.billingToggleBtn {
+  padding: 8px 20px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.88rem;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.15s;
+}
+
+.billingToggleBtn:first-child {
+  border-radius: 8px 0 0 8px;
+}
+
+.billingToggleBtn:last-child {
+  border-radius: 0 8px 8px 0;
+}
+
+.billingToggleBtn:hover {
+  color: var(--foreground);
+}
+
+.billingToggleActive {
+  background: var(--accent);
+  color: var(--accent-foreground);
+  border-color: var(--accent);
+}
+
+.content {
+  overflow-y: auto;
+  padding: 20px;
+  flex: 1;
+}
+
+.loading {
+  padding: 32px;
+  text-align: center;
+  color: var(--muted);
+}
+
+.planGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+
+@media (min-width: 600px) {
+  .planGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 900px) {
+  .planGrid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.planCard {
+  position: relative;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  min-height: 320px;
+}
+
+.planCardCurrent {
+  border-color: var(--accent-solid, #3b82f6);
+  background: color-mix(in srgb, var(--accent-solid, #3b82f6) 6%, var(--surface));
+}
+
+.planCardOffered {
+  border-color: #f59e0b;
+  background: color-mix(in srgb, #f59e0b 6%, var(--surface));
+}
+
+.planCardFeatured {
+  border: 2px solid transparent;
+  background: linear-gradient(var(--surface), var(--surface)) padding-box,
+    linear-gradient(135deg, var(--accent), #f59e0b) border-box;
+}
+
+.planTypePill {
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 6px;
+}
+
+.planTypePillBelowName {
+  display: inline-block;
+  margin-bottom: 8px;
+}
+
+.planTypePillRecurring {
+  background: #e5e7eb;
+  color: #374151;
+}
+
+.planTypePillPackage {
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fde68a;
+}
+
+.planTypePillBundle {
+  background: #dbeafe;
+  color: #1e40af;
+  border: 1px solid #93c5fd;
+}
+
+.mostPopularBadge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--accent-foreground);
+}
+
+.planPriceBilled {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.planTypeSubtext {
+  font-size: 0.75rem;
+  color: var(--muted);
+  margin: 4px 0 0;
+  line-height: 1.3;
+}
+
+/* Mobile collapsible */
+.planCardMobileHeader {
+  display: none;
+}
+
+.planCardMobileRow1 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  flex-wrap: wrap;
+}
+
+.planCardMobileName {
+  flex: 1;
+  min-width: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--foreground);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.planCardMobileRow2 {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  margin-top: 6px;
+}
+
+.planCardMobileCancel {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.planTypePillMobile {
+  position: static;
+}
+
+.savingsBadgeMobile {
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: #d1fae5;
+  color: #065f46;
+  border: 1px solid #a7f3d0;
+}
+
+.mostPopularBadgeMobile,
+.currentBadgeMobile,
+.offerBadgeMobile {
+  font-size: 0.65rem;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 6px;
+}
+
+.mostPopularBadgeMobile {
+  background: var(--accent);
+  color: var(--accent-foreground);
+}
+
+.currentBadgeMobile {
+  background: var(--accent);
+  color: var(--accent-foreground);
+}
+
+.offerBadgeMobile {
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fde68a;
+}
+
+.planCardMobileChevron {
+  color: var(--muted);
+  transition: transform 0.25s ease;
+}
+
+.planCardMobileChevronOpen {
+  transform: rotate(180deg);
+}
+
+.planCardExpandable {
+  /* Desktop: always visible */
+}
+
+@media (max-width: 768px) {
+  .planCardMobileHeader {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0;
+    padding: 0 0 12px;
+    margin-bottom: 0;
+    cursor: pointer;
+    position: relative;
+    z-index: 1;
+    width: 100%;
+  }
+
+  .planCardMobileHeader .planPrice {
+    font-size: 1rem;
+    flex-shrink: 0;
+  }
+
+  .planCardMobileHeader .planCardMobileChevron {
+    flex-shrink: 0;
+  }
+
+  .planCardTop {
+    display: none !important;
+  }
+
+  .planCard .currentBadge,
+  .planCard .offerBadge,
+  .planCard .mostPopularBadge {
+    display: none;
+  }
+
+  .planCardExpandable {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.35s ease;
+  }
+
+  .planCardMobileExpanded .planCardExpandable {
+    max-height: 800px;
+  }
+
+  .planCard {
+    min-height: auto;
+  }
+}
+
+.currentBadge {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--accent-foreground);
+}
+
+.offerBadge {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fde68a;
+}
+
+.planCardTop {
+  margin-bottom: 16px;
+}
+
+.planName {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--foreground);
+  margin: 0 0 8px;
+}
+
+.planPriceWrap {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.planPrice {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--foreground);
+}
+
+.planPriceEquivalent {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.savingsBadge {
+  display: inline-block;
+  margin-top: 6px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: #d1fae5;
+  color: #065f46;
+  border: 1px solid #a7f3d0;
+}
+
+.planDesc {
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin: 8px 0 0;
+  line-height: 1.4;
+}
+
+.planFeatures {
+  flex: 1;
+  overflow-y: auto;
+  margin-bottom: 16px;
+  min-height: 0;
+}
+
+.featureGroup {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 12px 0 4px;
+}
+
+.featureGroup:first-child {
+  margin-top: 0;
+}
+
+.featureRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  color: var(--foreground);
+  padding: 4px 0;
+}
+
+.featureRowExcluded {
+  color: var(--muted);
+}
+
+.featureCheck {
+  flex-shrink: 0;
+  color: #10b981;
+}
+
+.featureX {
+  flex-shrink: 0;
+  color: var(--muted);
+}
+
+.planCardBottom {
+  margin-top: auto;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.cancellationWrap {
+  margin-bottom: 12px;
+}
+
+.cancellationFeeRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78rem;
+  color: #b45309;
+}
+
+.cancellationFeeIcon {
+  flex-shrink: 0;
+  color: #f59e0b;
+}
+
+.learnMoreLink {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  font-size: 0.78rem;
+  color: #b45309;
+  text-decoration: underline;
+}
+
+.learnMoreLink:hover {
+  color: #92400e;
+}
+
+.cancellationPolicyText {
+  width: 100%;
+  margin: 6px 0 0;
+  padding: 8px 10px;
+  background: color-mix(in srgb, #f59e0b 8%, transparent);
+  border-radius: 6px;
+  font-size: 0.75rem;
+  color: var(--foreground);
+  line-height: 1.4;
+}
+
+.cancelAnytimeRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78rem;
+  color: #059669;
+  margin-bottom: 12px;
+}
+
+.cancelAnytimeRow svg {
+  flex-shrink: 0;
+  color: #10b981;
+}
+
+.contactBtn {
+  display: block;
+  width: 100%;
+  padding: 10px 16px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--foreground);
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-decoration: none;
+  text-align: center;
+  transition: all 0.15s;
+}
+
+.contactBtn:hover {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+}
+
+.acceptOfferBtn {
+  display: block;
+  width: 100%;
+  padding: 10px 16px;
+  border-radius: 8px;
+  border: none;
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: white;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.acceptOfferBtn:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.acceptOfferBtn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.emptyState {
+  text-align: center;
+  padding: 32px 20px;
+}
+
+.emptyText {
+  font-size: 0.9rem;
+  color: var(--muted);
+  margin: 0 0 16px;
+}
+
+.getStartedBtn {
+  display: inline-block;
+  padding: 12px 24px;
+  border-radius: 8px;
+  border: none;
+  background: var(--accent);
+  color: var(--accent-foreground);
+  font-size: 0.95rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: opacity 0.15s;
+}
+
+.getStartedBtn:hover {
+  opacity: 0.9;
+}
+
+.footer {
+  font-size: 0.8rem;
+  color: var(--muted);
+  text-align: center;
+  padding: 16px 20px;
+  border-top: 1px solid var(--border);
+  margin: 0;
+}

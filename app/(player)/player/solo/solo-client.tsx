@@ -10,7 +10,10 @@ import {
   ArrowLeft,
   Clock,
   FileVideo,
+  Lock,
 } from "lucide-react";
+import { PlanGate } from "@/components/plan-gate/PlanGate";
+import { usePlanAccess } from "@/components/plan-gate/PlanAccessContext";
 import {
   TECHNICAL_SUB_SKILLS,
   PHYSICAL_SKILLS,
@@ -107,6 +110,7 @@ interface NavState {
 }
 
 const TAB_ORDER: Tab[] = ["start-here", "technical", "physical", "mental", "tactical", "training"];
+const SOLO_TAB_KEYS = ["technical", "tactical", "physical", "mental"] as const;
 
 const TAB_LABELS: Record<Tab, string> = {
   "start-here": "Start Here",
@@ -152,6 +156,25 @@ function calculateDuration(session: SoloSession): number {
 }
 
 export default function SoloClient({ playerId, sessions, videos, thumbnails, currentPeriod, likedVideoIds, exerciseLibrary, recentTrainingLogs, weeklyHgMinutes, eliteTargetHours }: Props) {
+  const planAccess = usePlanAccess();
+  const soloLocked = !planAccess.soloAccess;
+  const soloReason = planAccess.hasPlan;
+
+  function isTabLocked(tabKey: string): boolean {
+    if (!SOLO_TAB_KEYS.includes(tabKey as (typeof SOLO_TAB_KEYS)[number])) return false;
+    const allowance = planAccess.sessionAllowances?.solo?.[tabKey] ?? 0;
+    const used = planAccess.sessionUsage?.solo?.[tabKey] ?? 0;
+    return allowance === 0 || (allowance !== -1 && used >= allowance);
+  }
+
+  function getTabLockReason(tabKey: string): string {
+    const allowance = planAccess.sessionAllowances?.solo?.[tabKey] ?? 0;
+    const used = planAccess.sessionUsage?.solo?.[tabKey] ?? 0;
+    const tabName = TAB_LABELS[tabKey as Tab] || tabKey;
+    if (allowance === 0) return `Your plan doesn't include ${tabName} sessions. Contact your coach to upgrade.`;
+    return `You've used all ${allowance} ${tabName} sessions this billing period.`;
+  }
+
   const [nav, setNav] = useState<NavState>({
     tab: "start-here",
     skill: null,
@@ -162,6 +185,8 @@ export default function SoloClient({ playerId, sessions, videos, thumbnails, cur
 
   const [loading, setLoading] = useState(false);
   const viewRef = useRef<HTMLDivElement>(null);
+
+  const currentTabLocked = SOLO_TAB_KEYS.includes(nav.tab as (typeof SOLO_TAB_KEYS)[number]) && isTabLocked(nav.tab);
 
   const navigateTo = useCallback((patch: Partial<NavState>) => {
     setLoading(true);
@@ -621,27 +646,37 @@ export default function SoloClient({ playerId, sessions, videos, thumbnails, cur
   }
 
   return (
-    <>
+    <PlanGate locked={soloLocked} reason={soloReason} planName={planAccess.planName} hasPlan={planAccess.hasPlan}>
       <div
         className={`${styles.container} ${isReelTab ? styles.containerReel : styles.containerCard}`}
         ref={viewRef}
       >
         <div className={`${styles.tabBar} ${isReelTab ? styles.tabBarReel : ""}`}>
-          {TAB_ORDER.map((key) => (
-            <button
-              key={key}
-              className={`${styles.tab} ${nav.tab === key ? styles.tabActive : ""}`}
-              onClick={() =>
-                navigateTo({ tab: key, skill: null, subSkill: null, sessionId: null })
-              }
-            >
-              {TAB_LABELS[key]}
-            </button>
-          ))}
+          {TAB_ORDER.map((key) => {
+            const locked = isTabLocked(key);
+            return (
+              <button
+                key={key}
+                className={`${styles.tab} ${nav.tab === key ? styles.tabActive : ""}`}
+                onClick={() =>
+                  navigateTo({ tab: key, skill: null, subSkill: null, sessionId: null })
+                }
+              >
+                {locked && <Lock size={12} className={styles.tabLockIcon} />}
+                {TAB_LABELS[key]}
+              </button>
+            );
+          })}
         </div>
 
-        {showBack && !nav.sessionId && renderBreadcrumb()}
-        {showBack && !nav.sessionId && (
+        {currentTabLocked && (
+          <div className={styles.tabLockBanner}>
+            {getTabLockReason(nav.tab)}
+          </div>
+        )}
+
+        {showBack && !nav.sessionId && !currentTabLocked && renderBreadcrumb()}
+        {showBack && !nav.sessionId && !currentTabLocked && (
           <button className={styles.backBtn} onClick={handleBack}>
             <ArrowLeft size={18} />
             Back
@@ -652,7 +687,7 @@ export default function SoloClient({ playerId, sessions, videos, thumbnails, cur
           className={isReelTab ? undefined : styles.viewWrapper}
           key={`${nav.tab}-${nav.skill}-${nav.subSkill}`}
         >
-          {renderView()}
+          {currentTabLocked ? null : renderView()}
         </div>
       </div>
 
@@ -665,6 +700,6 @@ export default function SoloClient({ playerId, sessions, videos, thumbnails, cur
           likedVideoIds={likedVideoIds}
         />
       )}
-    </>
+    </PlanGate>
   );
 }

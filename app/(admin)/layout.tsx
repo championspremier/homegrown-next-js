@@ -2,6 +2,7 @@ import { requireRole } from "@/lib/auth";
 import { getNavItemsForRole, getRoleHome } from "@/lib/role";
 import { AppShell } from "@/components/layout/AppShell";
 import { createClient } from "@/lib/supabase/server";
+import NotificationBell from "@/components/notifications/NotificationBell";
 
 export default async function AdminLayout({
   children,
@@ -27,6 +28,8 @@ export default async function AdminLayout({
       navItems={getNavItemsForRole("admin")}
       roleHome={getRoleHome("admin")}
       profilePhotoUrl={profilePhotoUrl}
+      mobileDrawer
+      topbarRight={<NotificationBell userId={profile.id} role="admin" />}
     >
       {children}
     </AppShell>

@@ -18,10 +18,33 @@ import {
   User,
   UserPen,
   Youtube,
+  AlertTriangle,
+  Check,
+  MoreHorizontal,
+  X,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useToast } from "@/components/ui/Toast";
+import PlansModal from "@/components/plan-gate/PlansModal";
+import { usePlanAccess } from "@/components/plan-gate/PlanAccessContext";
 import styles from "./profile.module.css";
+
+const SHORT_LABELS: Record<string, string> = {
+  one_on_one: "1:1",
+  tec_tac: "Tec Tac",
+  sprint_training: "Sprint",
+  strength_conditioning: "S&C",
+  cpp: "CPP",
+  college_advising: "College",
+  psychologist: "Psych",
+  nutrition: "Nutrition",
+  pro_player_stories: "Stories",
+  group_film_analysis: "Film",
+  technical: "Technical",
+  tactical: "Tactical",
+  physical: "Physical",
+  mental: "Mental",
+};
 
 interface Socials {
   facebook: string | null;
@@ -32,8 +55,29 @@ interface Socials {
   linkedin: string | null;
 }
 
+interface ActivePlanData {
+  id: string;
+  plan_id: string;
+  start_date: string | null;
+  plans: {
+    name: string | null;
+    price: number;
+    plan_type: string | null;
+    billing_period: string | null;
+    cancellation_fee: number | null;
+    cancellation_policy_text: string | null;
+    solo_access: boolean;
+    virtual_access: boolean;
+    session_allowances: Record<string, Record<string, number>> | null;
+  } | null;
+}
+
 interface ProfileClientProps {
   playerId: string;
+  effectivePlayerId: string;
+  activePlans: ActivePlanData[];
+  pastPlanName: string | null;
+  playerName: string;
   profile: {
     firstName: string;
     lastName: string;
@@ -78,6 +122,10 @@ const TikTokIcon = () => (
 
 export default function ProfileClient({
   playerId,
+  effectivePlayerId,
+  activePlans,
+  pastPlanName,
+  playerName,
   profile,
   photoUrl,
   homegrownProgram,
@@ -85,6 +133,17 @@ export default function ProfileClient({
 }: ProfileClientProps) {
   const router = useRouter();
   const { showToast } = useToast();
+  const planAccess = usePlanAccess();
+  const [plansModalOpen, setPlansModalOpen] = useState(false);
+  const [showCancelSurvey, setShowCancelSurvey] = useState(false);
+  const [cancelModalOpen, setCancelModalOpen] = useState(false);
+  const [cancelPlanTarget, setCancelPlanTarget] = useState<ActivePlanData | null>(null);
+  const [cancelSurveyReason, setCancelSurveyReason] = useState<string>("");
+  const [cancelSurveyFeedback, setCancelSurveyFeedback] = useState("");
+  const [submittingSurvey, setSubmittingSurvey] = useState(false);
+  const [detailsModalPlan, setDetailsModalPlan] = useState<ActivePlanData | null>(null);
+  const [openMenuPlanId, setOpenMenuPlanId] = useState<string | null>(null);
+  const [cancelling, setCancelling] = useState(false);
 
   const [firstName, setFirstName] = useState(profile.firstName);
   const [lastName, setLastName] = useState(profile.lastName);
@@ -250,6 +309,124 @@ export default function ProfileClient({
     document.documentElement.setAttribute("data-theme", next);
   }
 
+  function buildUsageForPeriod(): string {
+    const sa = planAccess.sessionAllowances;
+    const su = planAccess.sessionUsage;
+    if (!sa) return "";
+    const parts: string[] = [];
+    for (const [bucket, bucketMap] of Object.entries({ solo: sa.solo, virtual: sa.virtual })) {
+      if (!bucketMap) continue;
+      for (const [k, allowance] of Object.entries(bucketMap)) {
+        if (allowance === 0) continue;
+        const used = bucket === "solo" ? (su?.solo?.[k] ?? 0) : (su?.virtual?.[k] ?? 0);
+        const label = SHORT_LABELS[k] || k.replace(/_/g, " ");
+        if (allowance === -1) parts.push(`${label}: ${used}/∞`);
+        else parts.push(`${label}: ${used}/${allowance}`);
+      }
+    }
+    return parts.join(" · ");
+  }
+
+  function planTypeBadge(pt: string | null): string {
+    if (pt === "recurring") return "Recurring";
+    if (pt === "package") return "Package";
+    if (pt === "bundle") return "Bundle";
+    return "Recurring";
+  }
+
+  const CANCEL_REASONS = [
+    "Too expensive",
+    "Not enough time",
+    "Achieved my goals",
+    "Switching programs",
+    "Taking a break",
+    "Other",
+  ] as const;
+
+  async function handleSubmitCancelSurvey() {
+    if (!cancelPlanTarget?.plans || !cancelSurveyReason.trim()) return;
+    setSubmittingSurvey(true);
+    const supabase = createClient();
+    const { error: surveyError } = await (supabase as any)
+      .from("cancellation_surveys")
+      .insert({
+        player_id: effectivePlayerId,
+        plan_id: cancelPlanTarget.plan_id,
+        subscription_id: cancelPlanTarget.id,
+        primary_reason: cancelSurveyReason.trim(),
+        additional_feedback: cancelSurveyFeedback.trim() || null,
+      });
+    if (surveyError) {
+      setSubmittingSurvey(false);
+      showToast("Failed to submit survey. Please try again.", "error");
+      return;
+    }
+    const { data: admins } = await (supabase as any).from("profiles").select("id").eq("role", "admin");
+    const adminIds = (admins || []).map((a: { id: string }) => a.id);
+    if (adminIds.length > 0) {
+      await (supabase as any).from("notifications").insert(
+        adminIds.map((recipient_id: string) => ({
+          recipient_id,
+          recipient_role: "admin",
+          notification_type: "information",
+          title: "Cancellation Survey Submitted",
+          message: `${playerName} is cancelling their ${cancelPlanTarget.plans.name} plan. Reason: ${cancelSurveyReason}.`,
+          is_read: false,
+          data: {
+            player_id: effectivePlayerId,
+            plan_id: cancelPlanTarget.plan_id,
+            subscription_id: cancelPlanTarget.id,
+            primary_reason: cancelSurveyReason,
+            additional_feedback: cancelSurveyFeedback.trim() || null,
+          },
+        }))
+      );
+    }
+    setSubmittingSurvey(false);
+    setShowCancelSurvey(false);
+    setCancelSurveyReason("");
+    setCancelSurveyFeedback("");
+    setCancelModalOpen(true);
+  }
+
+  function handleKeepPlanFromSurvey() {
+    setShowCancelSurvey(false);
+    setCancelPlanTarget(null);
+    setCancelSurveyReason("");
+    setCancelSurveyFeedback("");
+  }
+
+  async function handleCancelPlan() {
+    if (!cancelPlanTarget) return;
+    setCancelling(true);
+    const supabase = createClient();
+    await (supabase as any)
+      .from("plan_subscriptions")
+      .update({ status: "cancelled" })
+      .eq("id", cancelPlanTarget.id);
+
+    const planName = cancelPlanTarget.plans?.name || "Plan";
+    const { data: admins } = await (supabase as any).from("profiles").select("id").eq("role", "admin");
+    const adminIds = (admins || []).map((a: { id: string }) => a.id);
+    if (adminIds.length > 0) {
+      await (supabase as any).from("notifications").insert(
+        adminIds.map((recipient_id: string) => ({
+          recipient_id,
+          recipient_role: "admin",
+          notification_type: "information",
+          title: "Player cancelled plan",
+          message: `${playerName} cancelled their ${planName} plan.`,
+          is_read: false,
+        }))
+      );
+    }
+    setCancelling(false);
+    setCancelModalOpen(false);
+    setCancelPlanTarget(null);
+    showToast("Your plan has been cancelled. You will lose access at the end of your billing period.", "success");
+    router.refresh();
+  }
+
   async function handleLogout() {
     const supabase = createClient();
     await supabase.auth.signOut();
@@ -299,6 +476,261 @@ export default function ProfileClient({
           </button>
         </div>
       </div>
+
+      {/* My Plan section */}
+      <div className={styles.section}>
+        <h2 className={styles.sectionTitle}>My Plan</h2>
+        {activePlans.length > 0 ? (
+          <div className={styles.myPlanContent}>
+            {activePlans.map((ap) => (
+              ap.plans && (
+                <div key={ap.id} className={styles.planCardMinimal}>
+                  <div className={styles.planCardMinimalMain}>
+                    <div className={styles.planCardMinimalHeader}>
+                      <span className={styles.myPlanName}>{ap.plans.name}</span>
+                      <span className={styles.myPlanActiveBadge}>Active</span>
+                    </div>
+                    <p className={styles.myPlanPrice}>
+                      ${ap.plans.price} / {ap.plans.billing_period === "annual" ? "annual" : "monthly"}
+                    </p>
+                    {ap.start_date && (
+                      <p className={styles.myPlanBilling}>Billing start: {new Date(ap.start_date).toLocaleDateString()}</p>
+                    )}
+                  </div>
+                  <div className={styles.planCardMinimalActions}>
+                    <button
+                      type="button"
+                      className={styles.planCardMoreBtn}
+                      onClick={() => setOpenMenuPlanId(openMenuPlanId === ap.id ? null : ap.id)}
+                      aria-label="More options"
+                    >
+                      <MoreHorizontal size={18} />
+                    </button>
+                    {openMenuPlanId === ap.id && (
+                      <>
+                        <div className={styles.planCardMenuBackdrop} onClick={() => setOpenMenuPlanId(null)} />
+                        <div className={styles.planCardMenuDropdown}>
+                          <button type="button" className={styles.planCardMenuItem} onClick={() => { setDetailsModalPlan(ap); setOpenMenuPlanId(null); }}>
+                            View Details
+                          </button>
+                          <button type="button" className={`${styles.planCardMenuItem} ${styles.planCardMenuItemDanger}`} onClick={() => { setCancelPlanTarget(ap); setCancelSurveyReason(""); setCancelSurveyFeedback(""); setShowCancelSurvey(true); setOpenMenuPlanId(null); }}>
+                            Cancel Plan
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+              )
+            ))}
+            <button type="button" className={styles.browsePlansLink} onClick={() => setPlansModalOpen(true)}>
+              Browse Plans
+            </button>
+          </div>
+        ) : (
+          <div className={styles.myPlanContent}>
+            <p className={styles.noPlanText}>No active plan</p>
+            <button type="button" className={styles.viewPlansGradientBtn} onClick={() => setPlansModalOpen(true)}>
+              View Plans
+            </button>
+            {pastPlanName && <p className={styles.pastPlanText}>Previous plan: {pastPlanName}</p>}
+          </div>
+        )}
+      </div>
+
+      {plansModalOpen && (
+        <PlansModal
+          onClose={() => setPlansModalOpen(false)}
+          currentPlanName={activePlans[0]?.plans?.name ?? undefined}
+          programIdForContact={undefined}
+        />
+      )}
+
+      {showCancelSurvey && cancelPlanTarget?.plans && (
+        <div className={styles.modalOverlay} onClick={handleKeepPlanFromSurvey}>
+          <div className={styles.cancelSurveyModal} onClick={(e) => e.stopPropagation()}>
+            <h3 className={styles.cancelSurveyTitle}>Before you go...</h3>
+            <p className={styles.cancelSurveySubtext}>Help us improve by letting us know why you&apos;re cancelling.</p>
+            <div className={styles.cancelSurveyQuestion}>
+              <label className={styles.cancelSurveyLabel}>Primary reason (required)</label>
+              <div className={styles.cancelSurveyPills}>
+                {CANCEL_REASONS.map((r) => (
+                  <button
+                    key={r}
+                    type="button"
+                    className={`${styles.cancelSurveyPill} ${cancelSurveyReason === r ? styles.cancelSurveyPillActive : ""}`}
+                    onClick={() => setCancelSurveyReason(r)}
+                  >
+                    {r}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className={styles.cancelSurveyQuestion}>
+              <label className={styles.cancelSurveyLabel}>Anything else you&apos;d like to share?</label>
+              <textarea
+                className={styles.cancelSurveyTextarea}
+                value={cancelSurveyFeedback}
+                onChange={(e) => setCancelSurveyFeedback(e.target.value.slice(0, 500))}
+                placeholder="Your feedback helps us improve..."
+                rows={3}
+              />
+              <span className={styles.cancelSurveyCharCount}>{cancelSurveyFeedback.length}/500</span>
+            </div>
+            <div className={styles.cancelSurveyActions}>
+              <button
+                type="button"
+                className={styles.cancelSurveyContinueBtn}
+                onClick={handleSubmitCancelSurvey}
+                disabled={!cancelSurveyReason.trim() || submittingSurvey}
+              >
+                {submittingSurvey ? "Submitting..." : "Continue to Cancel"}
+              </button>
+              <button type="button" className={styles.keepPlanBtn} onClick={handleKeepPlanFromSurvey}>
+                Keep My Plan
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {detailsModalPlan?.plans && (
+        <div className={styles.modalOverlay} onClick={() => setDetailsModalPlan(null)}>
+          <div className={styles.detailsModal} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.detailsModalHeader}>
+              <h3 className={styles.detailsModalTitle}>{detailsModalPlan.plans.name}</h3>
+              <span className={styles.myPlanActiveBadge}>Active</span>
+            </div>
+            <p className={styles.detailsModalPrice}>
+              ${detailsModalPlan.plans.price} / {detailsModalPlan.plans.billing_period === "annual" ? "year" : detailsModalPlan.plans.billing_period || "month"}
+            </p>
+            <span className={`${styles.planTypeBadge} ${detailsModalPlan.plans.plan_type === "package" ? styles.planTypePackage : detailsModalPlan.plans.plan_type === "bundle" ? styles.planTypeBundle : styles.planTypeRecurring}`}>
+              {planTypeBadge(detailsModalPlan.plans.plan_type)}
+            </span>
+            <div className={styles.detailsModalFeatures}>
+              {(() => {
+                const sa = detailsModalPlan.plans.session_allowances;
+                const onfield = sa?.onfield || {};
+                const virtual = sa?.virtual || {};
+                const solo = sa?.solo || {};
+                const showOnfield = detailsModalPlan.plans.virtual_access || Object.keys(onfield).some((k) => (onfield[k] ?? 0) > 0);
+                return (
+                  <>
+                    {showOnfield && (
+                      <>
+                        <div className={styles.detailsFeatureGroup}>On-field</div>
+                        {["one_on_one", "tec_tac", "sprint_training", "strength_conditioning"].map((k) => {
+                          const v = onfield[k] ?? 0;
+                          const label = SHORT_LABELS[k] || k.replace(/_/g, " ");
+                          const inc = v !== 0;
+                          const unlim = v === -1;
+                          return (
+                            <div key={k} className={`${styles.detailsFeatureRow} ${!inc ? styles.detailsFeatureExcluded : ""}`}>
+                              {inc ? <Check size={14} className={styles.detailsFeatureCheck} /> : <X size={14} className={styles.detailsFeatureX} />}
+                              <span>{label}: {inc ? (unlim ? "∞" : v) : "—"}</span>
+                            </div>
+                          );
+                        })}
+                      </>
+                    )}
+                    {(detailsModalPlan.plans.virtual_access || Object.keys(virtual).some((k) => (virtual[k] ?? 0) > 0)) && (
+                      <>
+                        <div className={styles.detailsFeatureGroup}>Virtual</div>
+                        {["cpp", "college_advising", "psychologist", "nutrition", "pro_player_stories", "group_film_analysis"].map((k) => {
+                          const v = virtual[k] ?? 0;
+                          const label = SHORT_LABELS[k] || k.replace(/_/g, " ");
+                          const inc = v !== 0;
+                          const unlim = v === -1;
+                          return (
+                            <div key={k} className={`${styles.detailsFeatureRow} ${!inc ? styles.detailsFeatureExcluded : ""}`}>
+                              {inc ? <Check size={14} className={styles.detailsFeatureCheck} /> : <X size={14} className={styles.detailsFeatureX} />}
+                              <span>{label}: {inc ? (unlim ? "∞" : v) : "—"}</span>
+                            </div>
+                          );
+                        })}
+                      </>
+                    )}
+                    {(detailsModalPlan.plans.solo_access || Object.keys(solo).some((k) => (solo[k] ?? 0) > 0)) && (
+                      <>
+                        <div className={styles.detailsFeatureGroup}>Solo</div>
+                        {["technical", "tactical", "physical", "mental"].map((k) => {
+                          const v = solo[k] ?? 0;
+                          const label = SHORT_LABELS[k] || k.replace(/_/g, " ");
+                          const inc = v !== 0;
+                          const unlim = v === -1;
+                          return (
+                            <div key={k} className={`${styles.detailsFeatureRow} ${!inc ? styles.detailsFeatureExcluded : ""}`}>
+                              {inc ? <Check size={14} className={styles.detailsFeatureCheck} /> : <X size={14} className={styles.detailsFeatureX} />}
+                              <span>{label}: {inc ? (unlim ? "∞" : v) : "—"}</span>
+                            </div>
+                          );
+                        })}
+                      </>
+                    )}
+                  </>
+                );
+              })()}
+            </div>
+            <p className={styles.detailsModalUsage}>Usage this period: {buildUsageForPeriod() || "—"}</p>
+            {detailsModalPlan.start_date && (
+              <p className={styles.detailsModalBilling}>Billing start: {new Date(detailsModalPlan.start_date).toLocaleDateString()}</p>
+            )}
+            <div className={styles.detailsModalCancellation}>
+              {(detailsModalPlan.plans.cancellation_fee ?? 0) > 0 ? (
+                <div className={styles.detailsModalFeeRow}>
+                  <AlertTriangle size={16} />
+                  <span>Early cancellation fee: ${detailsModalPlan.plans.cancellation_fee!.toFixed(2)}</span>
+                </div>
+              ) : (
+                <div className={styles.detailsModalCancelOk}>
+                  <Check size={16} />
+                  <span>Cancel anytime, no fee</span>
+                </div>
+              )}
+            </div>
+            <button type="button" className={styles.detailsModalCloseBtn} onClick={() => setDetailsModalPlan(null)}>
+              Close
+            </button>
+          </div>
+        </div>
+      )}
+
+      {cancelModalOpen && cancelPlanTarget?.plans && (
+        <div className={styles.modalOverlay} onClick={() => { setCancelModalOpen(false); setCancelPlanTarget(null); }}>
+          <div className={styles.cancelModal} onClick={(e) => e.stopPropagation()}>
+            <h3 className={styles.cancelModalTitle}>Cancel Plan</h3>
+            {(cancelPlanTarget.plans.cancellation_fee ?? 0) > 0 ? (
+              <>
+                <div className={styles.cancelModalWarning}>
+                  <AlertTriangle size={18} />
+                  <span>Early cancellation fee applies</span>
+                </div>
+                {cancelPlanTarget.plans.cancellation_policy_text && (
+                  <p className={styles.cancelModalPolicy}>{cancelPlanTarget.plans.cancellation_policy_text}</p>
+                )}
+                <p className={styles.cancelModalFee}>A ${cancelPlanTarget.plans.cancellation_fee!.toFixed(2)} cancellation fee will be charged.</p>
+              </>
+            ) : (
+              <p className={styles.cancelModalSimple}>
+                Are you sure you want to cancel your {cancelPlanTarget.plans.name} plan?
+              </p>
+            )}
+            <div className={styles.cancelModalActions}>
+              <button type="button" className={styles.keepPlanBtn} onClick={() => { setCancelModalOpen(false); setCancelPlanTarget(null); }}>
+                Keep My Plan
+              </button>
+              <button
+                type="button"
+                className={styles.cancelAnywayBtn}
+                onClick={handleCancelPlan}
+                disabled={cancelling}
+              >
+                {cancelling ? "Cancelling..." : (cancelPlanTarget.plans.cancellation_fee ?? 0) > 0 ? "Cancel Anyway" : "Yes, Cancel"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Profile Photo — always visible */}
       <div className={styles.section}>

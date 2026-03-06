@@ -84,6 +84,614 @@
   text-align: center;
 }
 
+/* My Plan section */
+.myPlanContent {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.myPlanHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.myPlanName {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--foreground);
+}
+
+.myPlanActiveBadge {
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #d1fae5;
+  color: #065f46;
+  border: 1px solid #a7f3d0;
+}
+
+.myPlanPrice {
+  font-size: 0.9rem;
+  color: var(--muted);
+  margin: 0;
+}
+
+.myPlanSummary {
+  font-size: 0.82rem;
+  color: var(--foreground);
+  margin: 0;
+}
+
+.myPlanUsage {
+  font-size: 0.8rem;
+  color: var(--muted);
+  margin: 0;
+}
+
+.myPlanBilling {
+  font-size: 0.8rem;
+  color: var(--muted);
+  margin: 0;
+}
+
+.planCardMinimal {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  margin-bottom: 12px;
+}
+
+.planCardMinimalMain {
+  flex: 1;
+  min-width: 0;
+}
+
+.planCardMinimalHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.planCardMinimalActions {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.planCardMoreBtn {
+  padding: 6px;
+  background: none;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  border-radius: 6px;
+}
+
+.planCardMoreBtn:hover {
+  color: var(--foreground);
+  background: var(--hover, rgba(0, 0, 0, 0.04));
+}
+
+.planCardMenuBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+}
+
+.planCardMenuDropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 4px;
+  min-width: 140px;
+  padding: 6px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 2;
+}
+
+.planCardMenuItem {
+  display: block;
+  width: 100%;
+  padding: 8px 12px;
+  text-align: left;
+  background: none;
+  border: none;
+  font-size: 0.88rem;
+  color: var(--foreground);
+  cursor: pointer;
+  border-radius: 6px;
+  font-family: inherit;
+}
+
+.planCardMenuItem:hover {
+  background: var(--hover, rgba(0, 0, 0, 0.04));
+}
+
+.planCardMenuItemDanger {
+  color: #dc2626;
+}
+
+.planCardMenuItemDanger:hover {
+  background: #fef2f2;
+}
+
+.browsePlansLink {
+  margin-top: 8px;
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 0.9rem;
+  color: var(--accent-solid, #3b82f6);
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.browsePlansLink:hover {
+  opacity: 0.8;
+}
+
+.viewPlansBtn {
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.88rem;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.viewPlansBtn:hover {
+  color: var(--foreground);
+  border-color: var(--foreground);
+}
+
+.cancelPlanLink {
+  margin-top: 12px;
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 0.82rem;
+  color: #dc2626;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.cancelPlanLink:hover {
+  color: #b91c1c;
+}
+
+.noPlanText {
+  font-size: 0.9rem;
+  color: var(--muted);
+  margin: 0 0 12px;
+}
+
+.viewPlansGradientBtn {
+  padding: 10px 20px;
+  border-radius: 8px;
+  border: none;
+  background: var(--accent);
+  color: var(--accent-foreground);
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.viewPlansGradientBtn:hover {
+  opacity: 0.9;
+}
+
+.pastPlanText {
+  font-size: 0.82rem;
+  color: var(--muted);
+  margin: 12px 0 0;
+}
+
+/* Cancel survey modal */
+.cancelSurveyModal {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 24px;
+  max-width: 420px;
+  width: 100%;
+}
+
+.cancelSurveyTitle {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--foreground);
+  margin: 0 0 8px;
+}
+
+.cancelSurveySubtext {
+  font-size: 0.9rem;
+  color: var(--muted);
+  margin: 0 0 20px;
+  line-height: 1.4;
+}
+
+.cancelSurveyQuestion {
+  margin-bottom: 20px;
+}
+
+.cancelSurveyLabel {
+  display: block;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--foreground);
+  margin-bottom: 10px;
+}
+
+.cancelSurveyPills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.cancelSurveyPill {
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--foreground);
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.15s;
+}
+
+.cancelSurveyPill:hover {
+  border-color: var(--accent-solid);
+  background: color-mix(in srgb, var(--accent-solid) 8%, transparent);
+}
+
+.cancelSurveyPillActive {
+  border-color: var(--accent-solid);
+  background: color-mix(in srgb, var(--accent-solid) 12%, transparent);
+  color: var(--accent-solid);
+}
+
+.cancelSurveyTextarea {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-family: inherit;
+  resize: vertical;
+  min-height: 80px;
+  background: var(--background);
+  color: var(--foreground);
+}
+
+.cancelSurveyTextarea:focus {
+  outline: none;
+  border-color: var(--accent-solid);
+}
+
+.cancelSurveyCharCount {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--muted);
+  margin-top: 4px;
+}
+
+.cancelSurveyActions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.cancelSurveyContinueBtn {
+  padding: 12px 20px;
+  border-radius: 8px;
+  border: 1px solid #dc2626;
+  background: transparent;
+  color: #dc2626;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.cancelSurveyContinueBtn:hover:not(:disabled) {
+  background: #fef2f2;
+}
+
+.cancelSurveyContinueBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Cancel modal */
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 16px;
+}
+
+.cancelModal {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 24px;
+  max-width: 400px;
+  width: 100%;
+}
+
+.cancelModalTitle {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--foreground);
+  margin: 0 0 16px;
+}
+
+.cancelModalWarning {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 14px;
+  background: #fef3c7;
+  border: 1px solid #fde68a;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  color: #92400e;
+  margin-bottom: 12px;
+}
+
+.cancelModalWarning svg {
+  flex-shrink: 0;
+  color: #f59e0b;
+}
+
+.cancelModalPolicy {
+  font-size: 0.85rem;
+  color: var(--foreground);
+  line-height: 1.5;
+  margin: 0 0 12px;
+}
+
+.cancelModalFee {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--foreground);
+  margin: 0 0 16px;
+}
+
+.cancelModalSimple {
+  font-size: 0.9rem;
+  color: var(--foreground);
+  margin: 0 0 16px;
+}
+
+.cancelModalActions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.keepPlanBtn {
+  padding: 10px 20px;
+  border-radius: 8px;
+  border: none;
+  background: var(--accent);
+  color: var(--accent-foreground);
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.keepPlanBtn:hover {
+  opacity: 0.9;
+}
+
+.cancelAnywayBtn {
+  padding: 10px 20px;
+  border-radius: 8px;
+  border: 1px solid #dc2626;
+  background: transparent;
+  color: #dc2626;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.cancelAnywayBtn:hover:not(:disabled) {
+  background: #fef2f2;
+}
+
+.cancelAnywayBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Details modal */
+.detailsModal {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 24px;
+  max-width: 420px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.detailsModalHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.detailsModalTitle {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--foreground);
+  margin: 0;
+}
+
+.detailsModalPrice {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--foreground);
+  margin: 0 0 8px;
+}
+
+.planTypeBadge {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 6px;
+  margin-bottom: 12px;
+}
+
+.planTypeRecurring {
+  background: #e5e7eb;
+  color: #374151;
+}
+
+.planTypePackage {
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fde68a;
+}
+
+.planTypeBundle {
+  background: #dbeafe;
+  color: #1e40af;
+  border: 1px solid #93c5fd;
+}
+
+.detailsModalFeatures {
+  margin: 16px 0;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.detailsFeatureGroup {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 12px 0 4px;
+}
+
+.detailsFeatureGroup:first-child {
+  margin-top: 0;
+}
+
+.detailsFeatureRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  color: var(--foreground);
+  padding: 4px 0;
+}
+
+.detailsFeatureExcluded {
+  color: var(--muted);
+}
+
+.detailsFeatureCheck {
+  flex-shrink: 0;
+  color: #10b981;
+}
+
+.detailsFeatureX {
+  flex-shrink: 0;
+  color: var(--muted);
+}
+
+.detailsModalUsage {
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin: 0 0 8px;
+}
+
+.detailsModalBilling {
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin: 0 0 12px;
+}
+
+.detailsModalCancellation {
+  margin: 12px 0 20px;
+}
+
+.detailsModalFeeRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  background: #fef3c7;
+  border: 1px solid #fde68a;
+  border-radius: 8px;
+  font-size: 0.88rem;
+  color: #92400e;
+}
+
+.detailsModalFeeRow svg {
+  flex-shrink: 0;
+  color: #f59e0b;
+}
+
+.detailsModalCancelOk {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.88rem;
+  color: #059669;
+}
+
+.detailsModalCancelOk svg {
+  flex-shrink: 0;
+  color: #10b981;
+}
+
+.detailsModalCloseBtn {
+  width: 100%;
+  padding: 12px 20px;
+  border-radius: 8px;
+  border: none;
+  background: var(--accent);
+  color: var(--accent-foreground);
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.detailsModalCloseBtn:hover {
+  opacity: 0.9;
+}
+
 /* Collapsible section header */
 .sectionHeader {
   display: flex;

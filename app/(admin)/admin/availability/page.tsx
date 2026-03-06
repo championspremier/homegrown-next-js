@@ -62,7 +62,7 @@ export default async function AdminAvailabilityPage() {
   return (
     <AvailabilityClient
       coachId={coachId}
-      coachName={(profile.full_name as string) || (profile.first_name as string) || "Admin"}
+      coachName={((profile as { full_name?: string | null; first_name?: string | null }).full_name ?? (profile as { first_name?: string | null }).first_name ?? "Admin") as string}
       recurringAvailability={recurringAvailability || []}
       dateOverrides={(dateOverrides || []).map((d: Record<string, unknown>) => ({
         id: d.id as string,

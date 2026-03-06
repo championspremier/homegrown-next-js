@@ -1,12 +1,14 @@
 import { createClient } from "@/lib/supabase/server";
 import { requireActiveRole } from "@/lib/auth";
+import { getActiveProfileIdFromCookies } from "@/lib/active-profile";
 import ProfileClient from "./profile-client";
 
 export const dynamic = "force-dynamic";
 
 export default async function PlayerProfilePage() {
-  const { activeProfile } = await requireActiveRole("player");
+  const { user, activeProfile } = await requireActiveRole("player");
   const supabase = await createClient();
+  const effectivePlayerId = (await getActiveProfileIdFromCookies()) ?? user.id;
   const playerId = activeProfile.id;
 
   const { data: playerProfile } = await supabase
@@ -48,6 +50,44 @@ export default async function PlayerProfilePage() {
   const membershipProgramId = (onFieldMembership as Record<string, unknown> | null)?.program_id as string | null;
   let onFieldProgram: Record<string, unknown> | null = null;
 
+  type ActivePlanItem = {
+    id: string;
+    plan_id: string;
+    start_date: string | null;
+    plans: {
+      name: string | null;
+      price: number;
+      plan_type: string | null;
+      billing_period: string | null;
+      cancellation_fee: number | null;
+      cancellation_policy_text: string | null;
+      solo_access: boolean;
+      virtual_access: boolean;
+      session_allowances: Record<string, Record<string, number>> | null;
+    } | null;
+  };
+  let activePlans: ActivePlanItem[] = [];
+  let pastPlanName: string | null = null;
+
+  const { data: activeSubs } = await (supabase as any)
+    .from("plan_subscriptions")
+    .select("id, plan_id, start_date, plans(name, price, plan_type, billing_period, cancellation_fee, cancellation_policy_text, solo_access, virtual_access, session_allowances)")
+    .eq("player_id", effectivePlayerId)
+    .eq("status", "active")
+    .order("created_at", { ascending: false })
+    .limit(2);
+  if (activeSubs?.length) activePlans = activeSubs;
+
+  const { data: pastSub } = await (supabase as any)
+    .from("plan_subscriptions")
+    .select("plans(name)")
+    .eq("player_id", effectivePlayerId)
+    .eq("status", "cancelled")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (pastSub?.plans?.name) pastPlanName = pastSub.plans.name as string;
+
   if (membershipProgramId && membershipProgramId !== (hg?.id as string | undefined)) {
     const { data } = await supabase
       .from("programs")
@@ -62,6 +102,10 @@ export default async function PlayerProfilePage() {
   return (
     <ProfileClient
       playerId={playerId}
+      effectivePlayerId={effectivePlayerId}
+      activePlans={activePlans}
+      pastPlanName={pastPlanName}
+      playerName={`${(pp?.first_name as string) || ""} ${(pp?.last_name as string) || ""}`.trim() || "Player"}
       profile={{
         firstName: (pp?.first_name as string) || "",
         lastName: (pp?.last_name as string) || "",

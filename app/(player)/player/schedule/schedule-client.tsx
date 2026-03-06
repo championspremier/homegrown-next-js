@@ -4,7 +4,25 @@ import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { reserveGroupSession, bookIndividualSessionForPlayer, cancelReservation } from "@/app/actions/schedule";
 import { useToast } from "@/components/ui/Toast";
+import { PlanGate } from "@/components/plan-gate/PlanGate";
+import { usePlanAccess } from "@/components/plan-gate/PlanAccessContext";
 import styles from "./schedule.module.css";
+
+import { mapSessionTypeNameToKey } from "@/lib/session-usage";
+import { Lock } from "lucide-react";
+
+const SESSION_LABEL_TO_KEY: Record<string, string> = {
+  "1:1 Sessions": "one_on_one",
+  "Tec Tac": "tec_tac",
+  "Sprint Training": "sprint_training",
+  "Strength & Conditioning": "strength_conditioning",
+  "CPP": "cpp",
+  "College Advising": "college_advising",
+  "Psychologist": "psychologist",
+  "Nutrition": "nutrition",
+  "Pro Player Stories": "pro_player_stories",
+  "Group Film Analysis": "group_film_analysis",
+};
 import type { PlayerIndividualSessionType } from "./page";
 
 export interface PlayerScheduleClientProps {
@@ -854,6 +872,12 @@ export default function PlayerScheduleClient({
   allLinkedPlayers,
 }: PlayerScheduleClientProps) {
   const { showToast } = useToast();
+  const planAccess = usePlanAccess();
+  const virtualLocked = !planAccess.virtualAccess;
+  const virtualReason = planAccess.hasPlan
+    ? "Virtual sessions require a plan with Virtual Access"
+    : "You need an active plan to access virtual sessions";
+
   const linkedIdsKey = useMemo(() => allLinkedPlayers?.map((p) => p.id).join(",") ?? "", [allLinkedPlayers]);
   const [onFieldOpen, setOnFieldOpen] = useState(false);
   const [virtualOpen, setVirtualOpen] = useState(false);
@@ -892,6 +916,7 @@ export default function PlayerScheduleClient({
     Record<string, { playerId: string; playerName: string; reservationId: string }[]>
   >({});
   const [blockedCoachIds, setBlockedCoachIds] = useState<Set<string>>(new Set());
+  const [bookingGate, setBookingGate] = useState<{ reason: string } | null>(null);
 
   const uniqueCoachesForModal = useMemo(() => {
     const dayOfWeek = selectedDate.getDay();
@@ -1549,9 +1574,66 @@ export default function PlayerScheduleClient({
     setBookingError(null);
   }, []);
 
+  const isVirtualSlotLocked = useCallback(
+    (slot: MergedSlot): boolean => {
+      if (slot.locationType !== "virtual" || !planAccess.hasPlan || !planAccess.virtualAccess) return false;
+      const sessionKey = mapSessionTypeNameToKey(slot.label || "");
+      if (!sessionKey) return false;
+      const allowance = planAccess.sessionAllowances?.virtual?.[sessionKey] ?? 0;
+      const used = planAccess.sessionUsage?.virtual?.[sessionKey] ?? 0;
+      return allowance === 0 || (allowance !== -1 && used >= allowance);
+    },
+    [planAccess]
+  );
+
+  const getVirtualSlotLockReason = useCallback(
+    (slot: MergedSlot): string => {
+      const sessionKey = mapSessionTypeNameToKey(slot.label || "");
+      if (!sessionKey) return "";
+      const allowance = planAccess.sessionAllowances?.virtual?.[sessionKey] ?? 0;
+      const used = planAccess.sessionUsage?.virtual?.[sessionKey] ?? 0;
+      if (allowance === 0) return "Not included in your plan";
+      return "Limit reached";
+    },
+    [planAccess]
+  );
+
+  const hasAllowanceForSlot = useCallback(
+    (slot: MergedSlot): boolean => {
+      const sa = planAccess.sessionAllowances;
+      if (!sa || !planAccess.hasPlan) return false;
+      const label = (slot.label || slot.labelAbbrev || "").trim();
+      const key = SESSION_LABEL_TO_KEY[label] || label.toLowerCase().replace(/\s+/g, "_").replace(/[^a-z0-9_]/g, "");
+      if (!key) return true;
+      const bucket = slot.locationType === "virtual" ? sa.virtual : sa.onfield;
+      const bucketMap = typeof bucket === "object" && bucket !== null ? bucket : {};
+      const allowance = bucketMap[key];
+      return allowance === -1 || (typeof allowance === "number" && allowance > 0);
+    },
+    [planAccess]
+  );
+
   const handleConfirmBooking = useCallback(
     async (slot: MergedSlot, excludePlayerIds?: string[]) => {
       if (bookingStatus === "loading") return;
+
+      const sessionLabel = (slot.label || slot.labelAbbrev || "this session type").trim();
+      if (planAccess.hasPlan && (slot.locationType === "virtual" && isVirtualSlotLocked(slot))) {
+        setBookingGate({ reason: `Your plan limit for ${sessionLabel} sessions has been reached.` });
+        return;
+      }
+      if (planAccess.hasPlan && !hasAllowanceForSlot(slot)) {
+        setBookingGate({
+          reason: `Your plan doesn't include ${sessionLabel} sessions`,
+        });
+        return;
+      }
+      if (!planAccess.hasPlan && (slot.locationType === "virtual" || slot.locationType === "on-field")) {
+        setBookingGate({
+          reason: `You need an active plan to book ${sessionLabel} sessions`,
+        });
+        return;
+      }
 
       if (onBeforeBook) {
         const result = await onBeforeBook(slot, excludePlayerIds);
@@ -1659,7 +1741,7 @@ export default function PlayerScheduleClient({
         setBookingError("Something went wrong. Please try again.");
       }
     },
-    [bookingStatus, playerId, parentId, selectedDate, onBeforeBook]
+    [bookingStatus, playerId, parentId, selectedDate, onBeforeBook, planAccess, hasAllowanceForSlot, isVirtualSlotLocked]
   );
 
   const handleCancelBooking = useCallback(
@@ -1934,6 +2016,7 @@ export default function PlayerScheduleClient({
         </div>
 
         {virtualOpen && (
+          <PlanGate locked={virtualLocked} reason={virtualReason} planName={planAccess.planName} hasPlan={planAccess.hasPlan}>
           <div className={styles.sectionContent}>
             <div className={styles.tabPills}>
               <button
@@ -2049,6 +2132,7 @@ export default function PlayerScheduleClient({
                             const reservedForSlot = slotReservations.map((r) => ({ playerName: r.playerName }));
                             const someLinkedReserved = slotReservations.length > 0;
                             const allLinkedReserved = !!allLinkedPlayers && slotReservations.length >= allLinkedPlayers.length;
+                            const vLocked = isVirtualSlotLocked(slot);
                             return (
                             <div key={slot.id}>
                               <div className={styles.slotRow}>
@@ -2076,7 +2160,13 @@ export default function PlayerScheduleClient({
                                       : undefined
                                   }
                                 />
-                                {selectedSlotId === slot.id && !slot.isPast && !reserved && (
+                                {vLocked && (
+                                  <div className={styles.virtualSlotLock}>
+                                    <Lock size={12} />
+                                    <span>{getVirtualSlotLockReason(slot)}</span>
+                                  </div>
+                                )}
+                                {selectedSlotId === slot.id && !slot.isPast && !reserved && !vLocked && (
                                   <button
                                     type="button"
                                     className={`${styles.slotConfirmBtn} ${
@@ -2143,6 +2233,7 @@ export default function PlayerScheduleClient({
                         <>
                           {visible.map((slot) => {
                             const reserved = isSlotReserved(slot);
+                            const vLocked = isVirtualSlotLocked(slot);
                             return (
                             <div key={slot.id}>
                               <div className={styles.slotRow}>
@@ -2165,7 +2256,13 @@ export default function PlayerScheduleClient({
                                   }}
                                   onDetails={() => setDetailSlot(slot)}
                                 />
-                                {selectedSlotId === slot.id && !slot.booked && !slot.isPast && !reserved && (
+                                {vLocked && (
+                                  <div className={styles.virtualSlotLock}>
+                                    <Lock size={12} />
+                                    <span>{getVirtualSlotLockReason(slot)}</span>
+                                  </div>
+                                )}
+                                {selectedSlotId === slot.id && !slot.booked && !slot.isPast && !reserved && !vLocked && (
                                   <button
                                     type="button"
                                     className={`${styles.slotConfirmBtn} ${
@@ -2215,9 +2312,22 @@ export default function PlayerScheduleClient({
             </div>
 
           </div>
+          </PlanGate>
         )}
       </div>
 
+      {bookingGate && (
+        <PlanGate
+          locked
+          asModal
+          reason={bookingGate.reason}
+          planName={planAccess.planName}
+          hasPlan={planAccess.hasPlan}
+          onClose={() => setBookingGate(null)}
+        >
+          <div />
+        </PlanGate>
+      )}
       {showCoachModal && (
         <CoachSelectionModal
           coaches={uniqueCoachesForModal}

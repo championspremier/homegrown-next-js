@@ -4,6 +4,9 @@ import { getNavItemsForRole, getRoleHome } from "@/lib/role";
 import { AccountSwitcher } from "@/components/account-switcher";
 import { AppShell } from "@/components/layout/AppShell";
 import { createClient } from "@/lib/supabase/server";
+import { getProgramBranding } from "@/lib/get-program-branding";
+import { getPlanAccessForParent } from "@/lib/plan-access";
+import { PlanAccessProvider } from "@/components/plan-gate/PlanAccessContext";
 
 export default async function ParentLayout({
   children,
@@ -11,6 +14,7 @@ export default async function ParentLayout({
   children: React.ReactNode;
 }) {
   const { user, profile, activeProfile } = await requireActiveRole("parent");
+  const planAccess = await getPlanAccessForParent(activeProfile.id);
   const linkedResult = await getLinkedAccounts();
   const self = linkedResult?.self ?? { id: user.id, full_name: profile.full_name ?? null, email: profile.email ?? null, role: profile.role ?? "parent" };
   const linked = linkedResult?.linked ?? [];
@@ -34,20 +38,25 @@ export default async function ParentLayout({
     profilePhotoUrl = photoData?.publicUrl || null;
   }
 
+  const branding = await getProgramBranding(supabase, activeProfile.id);
+
   return (
-    <AppShell
-      navItems={getNavItemsForRole(activeProfile.role ?? "parent")}
-      roleHome={getRoleHome(activeProfile.role ?? "parent")}
-      profilePhotoUrl={profilePhotoUrl}
-      topbarRight={
-        <AccountSwitcher
-          activeProfile={activeForSwitcher}
-          self={self}
-          linked={linked ?? []}
-        />
-      }
-    >
-      {children}
-    </AppShell>
+    <PlanAccessProvider planAccess={planAccess} profileId={activeProfile.id}>
+      <AppShell
+        navItems={getNavItemsForRole(activeProfile.role ?? "parent")}
+        roleHome={getRoleHome(activeProfile.role ?? "parent")}
+        profilePhotoUrl={profilePhotoUrl}
+        branding={branding}
+        topbarRight={
+          <AccountSwitcher
+            activeProfile={activeForSwitcher}
+            self={self}
+            linked={linked ?? []}
+          />
+        }
+      >
+        {children}
+      </AppShell>
+    </PlanAccessProvider>
   );
 }

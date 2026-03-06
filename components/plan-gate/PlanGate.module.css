@@ -1,0 +1,110 @@
+.wrapper {
+  position: relative;
+  min-height: 200px;
+}
+
+.wrapperModal {
+  position: fixed;
+  inset: 0;
+  min-height: 0;
+  z-index: 1000;
+}
+
+.blurredContent {
+  filter: blur(6px);
+  pointer-events: none;
+  user-select: none;
+}
+
+.backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 900;
+}
+
+.overlayCard {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+  padding: 32px;
+  max-width: 400px;
+  width: calc(100% - 32px);
+  z-index: 901;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 12px;
+}
+
+.lockIcon {
+  color: var(--accent);
+  margin-bottom: 4px;
+}
+
+.title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--foreground);
+  margin: 0;
+}
+
+.subtitle {
+  font-size: 0.95rem;
+  color: var(--foreground);
+  margin: 0;
+}
+
+.planNote {
+  font-size: 0.9rem;
+  color: var(--muted);
+  margin: 0 0 8px;
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  margin-top: 8px;
+}
+
+.gradientBtn {
+  padding: 12px 20px;
+  border-radius: 10px;
+  border: none;
+  background: var(--accent);
+  color: var(--accent-foreground);
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: opacity 0.15s;
+}
+
+.gradientBtn:hover {
+  opacity: 0.9;
+}
+
+.ghostBtn {
+  padding: 10px 16px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.15s;
+}
+
+.ghostBtn:hover {
+  color: var(--foreground);
+  border-color: var(--foreground);
+}

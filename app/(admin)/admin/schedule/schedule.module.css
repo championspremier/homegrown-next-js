@@ -209,9 +209,10 @@
 .calendarGrid {
   border: 1px solid var(--border);
   border-radius: 8px;
-  overflow: hidden;
+  overflow-x: auto;
   overflow-y: auto;
   background: var(--surface);
+  -webkit-overflow-scrolling: touch;
 }
 
 .gridInner {
@@ -219,6 +220,7 @@
   grid-template-columns: 4rem repeat(7, 1fr);
   grid-template-rows: auto;
   min-height: 60px;
+  min-width: 900px;
 }
 
 .timeGutter {
@@ -238,6 +240,7 @@
   font-weight: 600;
   text-transform: uppercase;
   padding: 0.25rem 0;
+  min-width: 900px;
 }
 
 .allDayLabel {
@@ -283,6 +286,7 @@
   display: grid;
   grid-template-columns: 4rem repeat(7, 1fr);
   grid-template-rows: 1080px;
+  min-width: 900px;
 }
 
 .timeGutterColumn {

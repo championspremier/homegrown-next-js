@@ -131,6 +131,7 @@ export default async function CoachHomePage() {
       coaches={coaches}
       playerLookup={playerLookup}
       sessionTypeColors={sessionTypeColors}
+      soloBookings={[]}
     />
   );
 }

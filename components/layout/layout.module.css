@@ -358,6 +358,25 @@
   gap: 1rem;
 }
 
+.topbarCenter {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--foreground);
+}
+
+.topbarLogo {
+  height: 28px;
+  width: auto;
+  object-fit: contain;
+}
+
+.brandLogo {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
 .topbarRight {
   display: flex;
   align-items: center;
@@ -538,9 +557,13 @@
   width: 2.5rem;
   height: 2.5rem;
   padding: 0;
-  border: 1px solid var(--border);
+  border: none;
   border-radius: 6px;
-  background: var(--surface);
+  background: transparent;
+  outline: none;
+  box-shadow: none;
+  color: var(--text);
+  cursor: pointer;
 }
 
 @media (min-width: 768px) {
@@ -561,6 +584,127 @@
 
 .sidebarMobileOpen {
   /* Used by Sidebar for mobile drawer if needed; bottom nav is always visible */
+}
+
+/* ── Mobile drawer mode (admin/coach) ── */
+.drawerBackdrop {
+  display: none;
+}
+
+.drawerCloseBtn {
+  display: none;
+}
+
+.sidebarDrawerMode {}
+.sidebarDrawerOpen {}
+.shellDrawerMode {}
+
+@media (max-width: 768px) {
+  .drawerBackdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    z-index: 2000;
+    pointer-events: none;
+  }
+
+  .sidebar.sidebarDrawerMode {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: auto;
+    bottom: 0;
+    width: 50vw;
+    height: 100vh;
+    flex-direction: column;
+    border-right: 1px solid var(--border);
+    border-top: none;
+    padding: 0;
+    transform: translateX(-100%);
+    transition: transform 250ms ease;
+    z-index: 2001;
+  }
+
+  .sidebar.sidebarDrawerOpen {
+    transform: translateX(0);
+  }
+
+  .sidebarDrawerMode .sidebarHeader {
+    display: flex;
+  }
+
+  .sidebarDrawerMode .sidebarToggle {
+    display: none;
+  }
+
+  .sidebarDrawerMode .drawerCloseBtn {
+    display: flex;
+    position: absolute;
+    top: 16px;
+    right: 12px;
+    width: 32px;
+    height: 32px;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: none;
+    color: var(--text);
+    cursor: pointer;
+    border-radius: 6px;
+    z-index: 1;
+  }
+
+  .sidebarDrawerMode .drawerCloseBtn:hover {
+    background: var(--hover);
+  }
+
+  .sidebarDrawerMode .sidebarNav {
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: stretch;
+    padding: 12px 8px;
+    gap: 2px;
+  }
+
+  .sidebarDrawerMode .sidebarLink {
+    flex-direction: row;
+    gap: 12px;
+    padding: 10px 12px;
+    font-size: 15px;
+    width: auto;
+    height: auto;
+    min-width: unset;
+  }
+
+  .sidebarDrawerMode .sidebarLink svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .sidebarDrawerMode .sidebarLabel {
+    font-size: 15px;
+    line-height: 1.4;
+  }
+
+  .shellDrawerMode .shellContent {
+    padding-bottom: 0;
+    padding-top: 56px;
+    width: 100%;
+    overflow-x: hidden;
+  }
+
+  .shellDrawerMode .topbar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1500;
+  }
+
+  .shellDrawerMode .main {
+    overflow-x: auto;
+  }
 }
 
 /* Account switcher (used in Topbar) */

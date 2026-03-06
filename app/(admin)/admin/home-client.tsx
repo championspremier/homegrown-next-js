@@ -4,6 +4,7 @@ import { useState, useMemo } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useToast } from "@/components/ui/Toast";
 import { UserRoundPen, CalendarClock, CalendarDays, Trash2, Pencil, X, Camera, CheckCircle2, XCircle } from "lucide-react";
+import NotificationBell from "@/components/notifications/NotificationBell";
 import styles from "./home.module.css";
 
 interface Coach {
@@ -107,7 +108,7 @@ interface Props {
   coaches: Record<string, Coach>;
   playerLookup: Record<string, PlayerInfo>;
   sessionTypeColors: Record<string, string>;
-  soloBookings: SoloBooking[];
+  soloBookings?: SoloBooking[];
 }
 
 type TabFilter = "all" | "my-day" | "past";
@@ -180,7 +181,7 @@ export default function HomeClient({
   coaches,
   playerLookup,
   sessionTypeColors,
-  soloBookings,
+  soloBookings = [],
 }: Props) {
   const { showToast } = useToast();
   const [activeTab, setActiveTab] = useState<TabFilter>("all");
@@ -204,9 +205,13 @@ export default function HomeClient({
 
   const allSessions = useMemo<UnifiedSession[]>(() => {
     const unified: UnifiedSession[] = [];
+    const safeGroupSessions = groupSessions ?? [];
+    const safeIndividualBookings = individualBookings ?? [];
+    const safeReservations = reservations ?? [];
+    const safeSoloBookings = soloBookings ?? [];
 
-    groupSessions.forEach((session) => {
-      const sessionReservations = reservations.filter((r) => r.session_id === session.id);
+    safeGroupSessions.forEach((session) => {
+      const sessionReservations = safeReservations.filter((r) => r.session_id === session.id);
       const coach = coaches[session.coach_id];
       unified.push({
         id: session.id,
@@ -239,7 +244,7 @@ export default function HomeClient({
       });
     });
 
-    individualBookings.forEach((booking) => {
+    safeIndividualBookings.forEach((booking) => {
       const coach = coaches[booking.coach_id];
       const player = playerLookup[booking.player_id];
       unified.push({
@@ -275,7 +280,7 @@ export default function HomeClient({
       });
     });
 
-    soloBookings.forEach((booking) => {
+    safeSoloBookings.forEach((booking) => {
       const player = playerLookup[booking.player_id];
       const soloSession = booking.solo_sessions;
       const skillLabel = soloSession
@@ -687,7 +692,7 @@ export default function HomeClient({
   }
 
   const pendingReviewCount = useMemo(
-    () => soloBookings.filter((b) => b.status === "pending_review").length,
+    () => (soloBookings ?? []).filter((b) => b.status === "pending_review").length,
     [soloBookings]
   );
 
@@ -795,6 +800,9 @@ export default function HomeClient({
             Welcome, <span className={styles.nameAccent}>{profileName.split(" ")[0]}</span>
           </h1>
           <p className={styles.dateLabel}>{dateDisplay}</p>
+        </div>
+        <div className={styles.desktopOnly}>
+          <NotificationBell userId={profileId} role={role} />
         </div>
       </div>
 

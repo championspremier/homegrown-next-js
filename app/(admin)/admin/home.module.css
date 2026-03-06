@@ -12,6 +12,17 @@
   margin-bottom: 24px;
 }
 
+.desktopOnly {
+  display: none;
+}
+
+@media (min-width: 769px) {
+  .desktopOnly {
+    display: flex;
+    align-items: center;
+  }
+}
+
 .welcomeTitle {
   font-size: 1.5rem;
   font-weight: 700;

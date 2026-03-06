@@ -5,12 +5,14 @@ import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import {
   ChevronLeft, ChevronRight, MapPin, Video, User, Target, HelpCircle,
-  Check, X,
+  Check, X, AlertTriangle, CreditCard,
 } from "lucide-react";
+import { usePlanAccess } from "@/components/plan-gate/PlanAccessContext";
 import { createClient } from "@/lib/supabase/client";
 import { cancelReservation } from "@/app/actions/schedule";
 import { useToast } from "@/components/ui/Toast";
 import NotificationBell from "@/components/notifications/NotificationBell";
+import PlansModal from "@/components/plan-gate/PlansModal";
 import styles from "./home.module.css";
 
 /* ─── Types ─── */
@@ -255,6 +257,9 @@ export default function PlayerHomeClient({
 }: Props) {
   const { showToast } = useToast();
   const router = useRouter();
+  const planAccess = usePlanAccess();
+  const [noPlanBannerDismissed, setNoPlanBannerDismissed] = useState(false);
+  const [plansModalOpen, setPlansModalOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   void unreadNotificationCount;
   void objectives;
@@ -707,6 +712,40 @@ export default function PlayerHomeClient({
 
   return (
     <div className={styles.page}>
+      {/* ─── No Plan Banner ─── */}
+      {!planAccess.hasPlan && !noPlanBannerDismissed && (
+        <div className={styles.noPlanBanner}>
+          <div className={styles.noPlanBannerLeft}>
+            <AlertTriangle size={16} className={styles.noPlanBannerIcon} />
+            <span>You don&apos;t have an active plan. Some features are blocked.</span>
+          </div>
+          <div className={styles.noPlanBannerRight}>
+            <button
+              type="button"
+              className={styles.noPlanBannerManage}
+              onClick={() => setPlansModalOpen(true)}
+            >
+              <CreditCard size={14} />
+              Manage Subscription
+            </button>
+            <button
+              type="button"
+              className={styles.noPlanBannerDismiss}
+              onClick={() => setNoPlanBannerDismissed(true)}
+              aria-label="Dismiss"
+            >
+              <X size={16} />
+            </button>
+          </div>
+        </div>
+      )}
+      {plansModalOpen && (
+        <PlansModal
+          onClose={() => setPlansModalOpen(false)}
+          currentPlanName={planAccess.planName}
+        />
+      )}
+
       {/* ─── Leaderboard ─── */}
       {leaderboard.length > 0 && (
         <div className={styles.leaderboard}>
